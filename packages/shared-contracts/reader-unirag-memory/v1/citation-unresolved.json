@@ -1,0 +1,15 @@
+{
+  "chunk_id": "memory:nonexistent-memory-id",
+  "source": "saved_memory",
+  "section": "已删除的笔记",
+  "page": 0,
+  "text": "这条记忆对应的卡片已被删除。",
+  "span": null,
+  "source_type": "saved_memory",
+  "artifact_id": "art-deleted-999",
+  "artifact_type": "reading_note",
+  "memory_id": "nonexistent-memory-id",
+  "title": "已删除的笔记",
+  "source_refs": [],
+  "contract_version": "reader-unirag-memory-v1"
+}

@@ -1,0 +1,46 @@
+{
+  "answer": "根据原文和你的笔记，监督学习使用标注数据训练模型 [chunk-001:100]。",
+  "citations": [
+    {
+      "chunk_id": "chunk-001:100",
+      "source": "sample.md",
+      "section": "第一章",
+      "page": 1,
+      "text": "监督学习使用标注数据训练模型。",
+      "span": [0, 100],
+      "verified": true,
+      "similarity": 0.92
+    },
+    {
+      "chunk_id": "memory:2dc412ad66a34e1396141b3de449eb93",
+      "source": "saved_memory",
+      "section": "监督学习的定义",
+      "page": 0,
+      "text": "监督学习的定义\n\n监督学习是使用标注数据训练模型的机器学习方法。\n\n- 使用标注数据\n- 训练模型",
+      "span": null,
+      "source_type": "saved_memory",
+      "artifact_id": "art-explain-001",
+      "artifact_type": "explain_card",
+      "memory_id": "2dc412ad66a34e1396141b3de449eb93",
+      "title": "监督学习的定义",
+      "source_refs": [
+        {
+          "documentId": "doc-sample-md",
+          "documentName": "sample.md",
+          "page": 1,
+          "paragraphId": "p-1",
+          "chunkId": "chunk-001",
+          "label": "P1",
+          "text": "监督学习使用标注数据训练模型。",
+          "grounding": {
+            "precision": "paragraph",
+            "matchedBy": "text",
+            "score": 0.92
+          }
+        }
+      ],
+      "contract_version": "reader-unirag-memory-v1"
+    }
+  ],
+  "session_id": "sess-test-001"
+}

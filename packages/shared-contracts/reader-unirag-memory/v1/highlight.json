@@ -1,0 +1,46 @@
+{
+  "memory": {
+    "source": "vibereader",
+    "kind": "saved_artifact",
+    "artifactId": "art-highlight-001",
+    "artifactType": "lens_card",
+    "title": "高亮：无监督学习",
+    "document": {
+      "id": "doc-sample-md",
+      "name": "sample.md",
+      "kind": "md",
+      "fingerprint": "sha256:abc123"
+    },
+    "verificationStatus": "ungrounded",
+    "sourceRefs": [
+      {
+        "documentId": "doc-sample-md",
+        "documentName": "sample.md",
+        "page": 3,
+        "paragraphId": "p-3",
+        "chunkId": "chunk-003",
+        "label": "P3",
+        "text": "无监督学习使用未标注数据。",
+        "grounding": {
+          "precision": "page",
+          "matchedBy": "page",
+          "score": 0.7
+        }
+      }
+    ],
+    "content": {
+      "question": "",
+      "answer": "",
+      "summary": "无监督学习使用未标注数据发现模式。",
+      "explanation": "",
+      "body": "",
+      "userNote": "",
+      "keyPoints": [],
+      "claims": []
+    },
+    "text": "## 高亮：无监督学习\n\n无监督学习使用未标注数据发现模式。",
+    "createdAt": 1735900200,
+    "savedAt": 1735900200,
+    "contractVersion": "reader-unirag-memory-v1"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "memory": {
+    "source": "vibereader",
+    "kind": "saved_artifact",
+    "artifactId": "art-explain-001",
+    "artifactType": "explain_card",
+    "title": "监督学习的定义",
+    "document": {
+      "id": "doc-sample-md",
+      "name": "sample.md",
+      "kind": "md",
+      "fingerprint": "sha256:abc123"
+    },
+    "verificationStatus": "grounded",
+    "sourceRefs": [
+      {
+        "documentId": "doc-sample-md",
+        "documentName": "sample.md",
+        "page": 1,
+        "paragraphId": "p-1",
+        "chunkId": "chunk-001",
+        "label": "P1",
+        "text": "监督学习使用标注数据训练模型。",
+        "grounding": {
+          "precision": "paragraph",
+          "matchedBy": "text",
+          "score": 0.92
+        }
+      }
+    ],
+    "content": {
+      "question": "什么是监督学习？",
+      "answer": "监督学习是使用标注数据训练模型的机器学习方法。",
+      "summary": "",
+      "explanation": "",
+      "body": "",
+      "userNote": "",
+      "keyPoints": [
+        "使用标注数据",
+        "训练模型"
+      ],
+      "claims": []
+    },
+    "text": "## 监督学习的定义\n\n监督学习是使用标注数据训练模型的机器学习方法。\n\n- 使用标注数据\n- 训练模型",
+    "createdAt": 1735900000,
+    "savedAt": 1735900000,
+    "contractVersion": "reader-unirag-memory-v1"
+  }
+}

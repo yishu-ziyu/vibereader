@@ -1,0 +1,5 @@
+phase: handoff
+task_id: 20260701-vibereader-knowledge-flywheel
+created: 2026-07-01T00:00:00+08:00
+workflow: product-lifecycle-v2
+description: "Use yishuship to manage the VibeReader + UniRAG product lifecycle."

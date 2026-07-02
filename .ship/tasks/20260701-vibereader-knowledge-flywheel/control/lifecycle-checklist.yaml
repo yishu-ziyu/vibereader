@@ -1,0 +1,87 @@
+workflow: product-lifecycle-v2
+task_id: 20260701-vibereader-knowledge-flywheel
+checkpoints:
+  - id: 0
+    name: product_type
+    status: required
+    artifact: product/00-product-type.yaml
+  - id: 1
+    name: brd
+    status: required
+    artifact: product/01-strategy.md
+  - id: 2
+    name: mrd
+    status: required
+    artifact: product/01-strategy.md
+  - id: 3
+    name: scenario_research
+    status: required
+    artifact: product/02-research.md
+  - id: 4
+    name: current_state
+    status: required
+    artifact: product/02-research.md
+  - id: 5
+    name: problem_summary
+    status: required
+    artifact: product/03-problem-solution.md
+  - id: 6
+    name: solution_idea
+    status: required
+    artifact: product/03-problem-solution.md
+  - id: 7
+    name: product_solution
+    status: required
+    artifact: product/04-product-blueprint.md
+  - id: 8
+    name: product_blueprint
+    status: required
+    artifact: product/04-product-blueprint.md
+  - id: 9
+    name: data_model
+    status: required
+    artifact: product/05-model-flow-role.md
+  - id: 10
+    name: flow_role
+    status: required
+    artifact: product/05-model-flow-role.md
+  - id: 11
+    name: interface_design
+    status: required
+    artifact: product/06-experience-spec.md
+  - id: 12
+    name: report_design
+    status: optional
+    artifact: product/07-data-permission-analytics.md
+  - id: 13
+    name: tracking
+    status: required
+    artifact: product/07-data-permission-analytics.md
+  - id: 14
+    name: permission
+    status: required
+    artifact: product/07-data-permission-analytics.md
+  - id: 15
+    name: prd
+    status: required
+    artifact: product/08-prd.md
+  - id: 16
+    name: technical_plan
+    status: required
+    artifact: product/09-tech-project-plan.md
+  - id: 17
+    name: project_management
+    status: required
+    artifact: product/09-tech-project-plan.md
+  - id: 18
+    name: delivery
+    status: required
+    artifact: delivery/design-spec.md
+  - id: 19
+    name: operations
+    status: optional
+    artifact: growth/01-ops-plan.md
+  - id: 20
+    name: iteration_analytics
+    status: required
+    artifact: growth/02-data-analysis.md

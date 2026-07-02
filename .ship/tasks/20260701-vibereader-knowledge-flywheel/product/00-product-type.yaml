@@ -1,0 +1,18 @@
+product_type: hybrid
+primary_user: "researchers, students, product builders, analysts, and heavy readers who work with long documents"
+buyer_or_user: "initially same person; later possible team or institutional buyer"
+core_scene: "local-first AI reading workspace where reading artifacts accumulate into a personal RAG knowledge base"
+workflow_weight:
+  strategy: required
+  research: required
+  data_model: required
+  permission: required
+  report: optional
+  analytics: required
+skip_rules:
+  - checkpoint: report_design
+    status: optional
+    reason: "The first product loop is individual reading and knowledge accumulation; formal reporting can wait until team or research workflow support."
+  - checkpoint: operations
+    status: optional
+    reason: "Launch and operation planning are not needed before the local integration spike proves the core loop."

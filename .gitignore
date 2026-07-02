@@ -1,0 +1,18 @@
+# Nested repositories are tracked and pushed independently during Phase C.0.
+/apps/reader/
+/services/uni-rag/
+/legacy/vibero/
+
+# Runtime and local noise
+.DS_Store
+node_modules/
+dist/
+build/
+*.log
+*.tmp
+
+# Keep shared contracts and lifecycle artifacts tracked here.
+!/packages/
+!/docs/
+!/.ship/
+!/scripts/

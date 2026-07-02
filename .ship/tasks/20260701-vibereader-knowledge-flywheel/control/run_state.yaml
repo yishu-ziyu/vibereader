@@ -1,0 +1,48 @@
+task_id: 20260701-vibereader-knowledge-flywheel
+active: true
+current_phase: phase-c-gradual-repository-migration
+status: subrepos-pushed-root-repo-in-progress
+workflow: product-lifecycle-v2
+updated_at: "2026-07-02T20:40:00+08:00"
+accepted_decisions:
+  - docs/decisions/DEC-0002-keep-reader-first-after-competitive-analysis.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/signature-feature-acceptance.md
+completed_artifacts:
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-rag-adapter-implementation.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-browser-smoke.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-unirag-health-status.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-unirag-health-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-unirag-query-adapter.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-unirag-query-contract.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/signature-feature-acceptance.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-document-ingest-handoff.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-document-ingest-contract.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-visible-ingest-status.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-visible-ingest-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-controlled-unirag-query.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-controlled-unirag-query-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-citation-grounding-jump.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-citation-grounding-jump-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-saved-memory-ingest.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-saved-memory-ingest-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-memory-aware-query.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-memory-aware-query-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-unirag-memory-backend.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-unirag-memory-backend-service.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-1-contract-stabilization-design.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-1-contract-stabilization.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/e2e/phase-1-contract-stabilization-browser.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/qa/codex-review-phase-1-contract-stabilization.md
+  - docs/decisions/DEC-0003-gradual-workbench-repository.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-c-gradual-repository-migration.md
+pending_user_acceptance:
+  - browser-level smoke: Reader Chat UI 完整飞轮（Slate.js 自动化 + MiniMax API Key 阻塞，contract 端到端已用浏览器 fetch + 单测组合验证）
+  - product decision: Phase C 是否创建顶层云端 monorepo / packages/shared-contracts
+  - architecture decision: Claude Visual RAG 是否进入主线，还是继续作为实验分支
+active_artifacts:
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/product/10-north-star-future.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/product/11-backcast-problem-definition.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/long-running-task-system.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-1-unirag-memory-backend-goal.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-1-contract-stabilization-goal.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/glm-contract-stabilization-handoff.md

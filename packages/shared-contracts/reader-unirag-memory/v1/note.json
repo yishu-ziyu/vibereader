@@ -1,0 +1,31 @@
+{
+  "memory": {
+    "source": "vibereader",
+    "kind": "saved_artifact",
+    "artifactId": "art-note-001",
+    "artifactType": "reading_note",
+    "title": "我的阅读笔记：监督学习",
+    "document": {
+      "id": "doc-sample-md",
+      "name": "sample.md",
+      "kind": "md",
+      "fingerprint": "sha256:abc123"
+    },
+    "verificationStatus": "ungrounded",
+    "sourceRefs": [],
+    "content": {
+      "question": "",
+      "answer": "",
+      "summary": "",
+      "explanation": "",
+      "body": "这是我对监督学习的个人理解笔记。",
+      "userNote": "监督学习需要标注数据，这是关键。",
+      "keyPoints": [],
+      "claims": []
+    },
+    "text": "## 我的阅读笔记：监督学习\n\n这是我对监督学习的个人理解笔记。\n\n监督学习需要标注数据，这是关键。",
+    "createdAt": 1735900100,
+    "savedAt": 1735900100,
+    "contractVersion": "reader-unirag-memory-v1"
+  }
+}

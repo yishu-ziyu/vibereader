@@ -1,0 +1,49 @@
+{
+  "memory": {
+    "source": "vibereader",
+    "kind": "saved_artifact",
+    "artifactId": "art-concept-001",
+    "artifactType": "concept_card",
+    "title": "机器学习核心概念",
+    "document": {
+      "id": "doc-sample-md",
+      "name": "sample.md",
+      "kind": "md",
+      "fingerprint": "sha256:abc123"
+    },
+    "verificationStatus": "grounded",
+    "sourceRefs": [
+      {
+        "documentId": "doc-sample-md",
+        "documentName": "sample.md",
+        "page": 2,
+        "paragraphId": "p-2",
+        "chunkId": "chunk-002",
+        "label": "P2",
+        "text": "机器学习从数据中学习模式。",
+        "grounding": {
+          "precision": "paragraph",
+          "matchedBy": "text",
+          "score": 0.88
+        }
+      }
+    ],
+    "content": {
+      "question": "机器学习的核心是什么？",
+      "answer": "机器学习的核心是从数据中学习模式。",
+      "summary": "",
+      "explanation": "",
+      "body": "",
+      "userNote": "",
+      "keyPoints": [
+        "从数据学习",
+        "模式识别"
+      ],
+      "claims": []
+    },
+    "text": "## 机器学习核心概念\n\n机器学习的核心是从数据中学习模式。\n\n- 从数据学习\n- 模式识别",
+    "createdAt": 1735900000,
+    "savedAt": 1735900000,
+    "contractVersion": "reader-unirag-memory-v1"
+  }
+}
