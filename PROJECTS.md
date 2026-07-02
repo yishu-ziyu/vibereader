@@ -123,12 +123,12 @@ Phase B: done.
   - run integration smoke.
 - Shared contracts now live at `packages/shared-contracts/reader-unirag-memory/v1/`. Reader and UniRAG contract tests both reference these fixtures via relative path lookup, with temporary compatibility for the old `contracts/` path.
 
-Phase C.0: local ready, cloud push pending GitHub auth.
+Phase C.0: done.
 
 - Initialize the workbench root as a Git repository for product-level assets.
 - Track `packages/shared-contracts`, `docs`, `.ship`, root scripts, `README.md`, and `PROJECTS.md`.
 - Keep `apps/reader`, `services/uni-rag`, and `legacy/vibero` ignored as nested repositories until a later subtree/submodule/flatten decision.
-- Next cloud action: create `yishu-ziyu/vibereader-knowledge-workbench`, add it as root `origin`, and push `main`.
+- Root remote is created and tracks `origin/main`; continue with the later subtree/submodule/flatten decision only after the nested repositories are reviewed.
 
 Phase C: later.
 

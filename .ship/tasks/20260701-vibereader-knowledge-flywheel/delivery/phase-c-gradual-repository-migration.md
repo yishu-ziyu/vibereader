@@ -4,7 +4,7 @@ Date: 2026-07-02
 
 ## Status
 
-Local migration ready. Top-level cloud push is blocked by GitHub CLI keyring auth, not by code or repository state.
+Local migration ready. Top-level cloud repository created and pushed.
 
 ## Completed
 
@@ -30,27 +30,16 @@ Local migration ready. Top-level cloud push is blocked by GitHub CLI keyring aut
 - Root repository secret scan found only generic/test placeholders, no real API keys.
 - Root repository large-file scan found no files over 1 MB outside ignored nested repositories.
 
-## Cloud Push Blocker
+## Cloud State
 
-Target remote:
+Root remote:
 
 ```text
 https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git
 ```
 
-The repository does not exist yet. `gh auth status` shows active account `yishu-ziyu`, but GitHub CLI fails with a keyring timeout, and no `GH_TOKEN` / `GITHUB_TOKEN` is available in the shell. The current session therefore cannot create the top-level cloud repository.
+The repository is private, default branch is `main`, and local root now tracks `origin/main`. Verified with `gh repo view` and `git ls-remote`.
 
 ## Next Action
 
-After GitHub CLI auth is refreshed, run from the workbench root:
-
-```bash
-gh repo create yishu-ziyu/vibereader-knowledge-workbench --private --source=. --remote=origin --push
-```
-
-If the repository is created manually first:
-
-```bash
-git remote add origin https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git
-git push -u origin main
-```
+Keep Phase C.0 as the stable management layer. Move to subtree/submodule/flatten only after Reader, UniRAG, and legacy Vibero repository states are explicitly reviewed.

@@ -1,9 +1,9 @@
 task_id: 20260701-vibereader-knowledge-flywheel
 active: true
 current_phase: phase-c-gradual-repository-migration
-status: root-repo-local-ready-cloud-pending-github-auth
+status: root-repo-pushed
 workflow: product-lifecycle-v2
-updated_at: "2026-07-02T20:38:53+08:00"
+updated_at: "2026-07-02T21:10:00+08:00"
 accepted_decisions:
   - docs/decisions/DEC-0002-keep-reader-first-after-competitive-analysis.md
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/signature-feature-acceptance.md
@@ -38,7 +38,6 @@ completed_artifacts:
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-c-gradual-repository-migration.md
 pending_user_acceptance:
   - browser-level smoke: Reader Chat UI 完整飞轮（Slate.js 自动化 + MiniMax API Key 阻塞，contract 端到端已用浏览器 fetch + 单测组合验证）
-  - cloud action: refresh GitHub CLI auth, then create/push `yishu-ziyu/vibereader-knowledge-workbench`
   - architecture decision: Claude Visual RAG 是否进入主线，还是继续作为实验分支
 active_artifacts:
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/product/10-north-star-future.md
