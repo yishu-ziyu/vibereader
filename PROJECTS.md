@@ -82,11 +82,14 @@ Current cloud state:
 
 | Local path | Current remote | Role |
 | --- | --- | --- |
+| workbench root | target: `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | product lifecycle docs, shared contracts, scripts |
 | `apps/reader` | `https://github.com/yishu-ziyu/VibeReader.git` | active Reader app |
 | `services/uni-rag` | `https://github.com/yishu-ziyu/uni-rag.git` | active Knowledge/RAG service |
 | `legacy/vibero` | `https://github.com/chenyu-xjtu/Vibero.git` | legacy reference |
 
 Target direction: one product should eventually have one cloud project home. Do not create more scattered remotes for new modules.
+
+The workbench root is locally committed at `208c7d4 chore: initialize workbench repository`. The target GitHub repository does not yet exist, and `gh` cannot create it in the current shell because GitHub CLI keyring authentication for `yishu-ziyu` times out. After GitHub auth is refreshed, create/push the root repo before moving to deeper monorepo migration.
 
 Migration trigger:
 
@@ -120,11 +123,12 @@ Phase B: done.
   - run integration smoke.
 - Shared contracts now live at `packages/shared-contracts/reader-unirag-memory/v1/`. Reader and UniRAG contract tests both reference these fixtures via relative path lookup, with temporary compatibility for the old `contracts/` path.
 
-Phase C.0: in progress.
+Phase C.0: local ready, cloud push pending GitHub auth.
 
 - Initialize the workbench root as a Git repository for product-level assets.
 - Track `packages/shared-contracts`, `docs`, `.ship`, root scripts, `README.md`, and `PROJECTS.md`.
 - Keep `apps/reader`, `services/uni-rag`, and `legacy/vibero` ignored as nested repositories until a later subtree/submodule/flatten decision.
+- Next cloud action: create `yishu-ziyu/vibereader-knowledge-workbench`, add it as root `origin`, and push `main`.
 
 Phase C: later.
 
