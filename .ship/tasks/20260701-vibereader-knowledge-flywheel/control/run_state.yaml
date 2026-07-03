@@ -1,9 +1,9 @@
 task_id: 20260701-vibereader-knowledge-flywheel
 active: true
-current_phase: phase-c-gradual-repository-migration
-status: root-repo-pushed
+current_phase: handoff
+status: phase-c0-complete-phase-c1-planned
 workflow: product-lifecycle-v2
-updated_at: "2026-07-02T21:10:00+08:00"
+updated_at: "2026-07-03T15:14:59+08:00"
 accepted_decisions:
   - docs/decisions/DEC-0002-keep-reader-first-after-competitive-analysis.md
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/signature-feature-acceptance.md
@@ -36,9 +36,15 @@ completed_artifacts:
   - docs/decisions/DEC-0003-gradual-workbench-repository.md
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-c-gradual-repository-migration.md
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/delivery/phase-c-gradual-repository-migration.md
+  - docs/decisions/DEC-0004-retain-subrepos-until-monorepo-cutover.md
+  - .ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-c1-monorepo-cutover-plan.md
 pending_user_acceptance:
   - browser-level smoke: Reader Chat UI 完整飞轮（Slate.js 自动化 + MiniMax API Key 阻塞，contract 端到端已用浏览器 fetch + 单测组合验证）
   - architecture decision: Claude Visual RAG 是否进入主线，还是继续作为实验分支
+next_actions:
+  - Phase C.1 repository state audit
+  - Phase C.1 root workflow smoke
+  - DEC-0005 monorepo cutover method
 active_artifacts:
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/product/10-north-star-future.md
   - .ship/tasks/20260701-vibereader-knowledge-flywheel/product/11-backcast-problem-definition.md
