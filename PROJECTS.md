@@ -51,7 +51,7 @@ Treat the new paths as canonical in new docs, prompts, scripts, and future commi
 
 ## Git State Notes
 
-- `apps/reader` is clean after commit `4ec8191 feat: stabilize UniRAG memory contract` and push to `https://github.com/yishu-ziyu/VibeReader.git`.
+- `apps/reader` Reading Agent Wave 17 shipped: commit on VibeReader `main` (feat agent harness); handoff `docs/AGENT_CONTINUE.md`. Prior contract: `4ec8191`.
 - `services/uni-rag` is clean after commit `b093749 feat: stabilize reader memory contract` and push to `https://github.com/yishu-ziyu/uni-rag.git`.
 - The workbench root is now a separate Phase C.0 repository for lifecycle docs, scripts, and shared contracts. It intentionally ignores nested code repositories during the gradual migration.
 - `legacy/vibero` currently has uncommitted changes under `ai-chat/`.
