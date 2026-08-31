@@ -17,9 +17,3 @@ echo "== UniRAG =="
 cd "$ROOT/services/uni-rag"
 git status --short
 git log -1 --oneline
-echo
-
-echo "== Vibero legacy =="
-cd "$ROOT/legacy/vibero"
-git status --short
-git log -1 --oneline

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeReader Knowledge Workbench · Architecture 0 报告</title>
+<style>
+  :root{
+    --bg:#0a0f1c; --panel:#0e1626; --panel2:#111c30; --line:rgba(148,163,184,.16);
+    --ink:#cbd5e1; --muted:#64748b; --amber:#fbbf24; --debt:#f87171; --store:#5eead4;
+    --http:#93c5fd; --ok:#a3e635;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      linear-gradient(rgba(148,163,184,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,.045) 1px, transparent 1px),
+      radial-gradient(1200px 700px at 70% -10%, #12203a 0%, var(--bg) 60%);
+    background-size:32px 32px, 32px 32px, cover;
+    color:var(--ink);
+    font:14px/1.65 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  h1,h2,h3{font-family:"Songti SC","STSong","Noto Serif SC",serif; font-weight:700; letter-spacing:.02em}
+  code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+
+  header{
+    display:flex; align-items:baseline; gap:16px; padding:14px 22px 10px;
+    border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  header h1{font-size:20px; color:#e2e8f0}
+  header h1 em{color:var(--amber); font-style:normal}
+  header .meta{color:var(--muted); font-size:12px}
+  .tabs{margin-left:auto; display:flex; gap:6px}
+  .tab{
+    padding:5px 14px; border:1px solid var(--line); border-radius:3px; cursor:pointer;
+    color:var(--muted); font-size:13px; background:transparent;
+  }
+  .tab.on{color:#0a0f1c; background:var(--amber); border-color:var(--amber); font-weight:600}
+
+  main{flex:1; display:flex; min-height:0}
+  /* ===== 画布区 ===== */
+  #stage{flex:1; position:relative; min-width:0}
+  svg#arch{width:100%; height:100%; display:block; cursor:grab}
+  svg#arch.dragging{cursor:grabbing}
+  .zoombar{position:absolute; top:12px; right:12px; display:flex; gap:6px}
+  .zoombar button{
+    width:32px; height:30px; border:1px solid var(--line); background:rgba(14,22,38,.9);
+    color:var(--ink); border-radius:3px; cursor:pointer; font-size:14px;
+  }
+  .zoombar button:hover{border-color:var(--amber); color:var(--amber)}
+  .legend{
+    position:absolute; left:12px; bottom:12px; padding:8px 12px; font-size:11.5px; color:var(--muted);
+    background:rgba(10,15,28,.85); border:1px solid var(--line); border-radius:3px; line-height:2;
+  }
+  .legend i{display:inline-block; width:18px; height:0; border-top:2px solid; margin-right:6px; vertical-align:middle}
+  .bandlabel{fill:#475569; font-size:11px; letter-spacing:.25em; font-family:"SF Mono",Menlo,monospace}
+
+  /* SVG 节点 */
+  .node{cursor:pointer}
+  .node rect.box{fill:rgba(17,28,48,.92); stroke:rgba(148,163,184,.4); stroke-width:1.2; rx:4}
+  .node:hover rect.box{stroke:var(--amber); stroke-width:1.6}
+  .node.hl rect.box{stroke:var(--amber); stroke-width:2.2; fill:rgba(60,45,10,.5)}
+  .node.dim{opacity:.18}
+  .node .t{fill:#e2e8f0; font-size:14px; font-weight:600}
+  .node .s{fill:#94a3b8; font-size:11px}
+  .node .m{fill:#5eead4; font-size:10.5px; font-family:"SF Mono",Menlo,monospace}
+  .badge{fill:#7f1d1d; stroke:var(--debt)}
+  .badge text{fill:#fecaca; font-size:9px; font-family:"SF Mono",Menlo,monospace}
+  .edge{stroke:rgba(148,163,184,.5); stroke-width:1.4; fill:none}
+  .edge.dashed{stroke-dasharray:5 4}
+  .edge.dotted{stroke-dasharray:2 4; stroke:#818cf8}
+  .edge.red{stroke:var(--debt); stroke-dasharray:5 4}
+  .edge.amber{stroke:var(--amber); stroke-width:2}
+  .edge.amberflow{stroke:var(--amber); stroke-width:2.4; fill:none; stroke-dasharray:8 6; animation:dash 1s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-14}}
+  .elabel{fill:#94a3b8; font-size:10.5px; paint-order:stroke; stroke:#0a0f1c; stroke-width:4px}
+  .elabel.red{fill:var(--debt)} .elabel.amber{fill:var(--amber)}
+
+  /* ===== 侧栏 ===== */
+  aside{
+    width:360px; border-left:1px solid var(--line); background:var(--panel);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  aside .head{padding:12px 16px 8px; border-bottom:1px solid var(--line); display:flex; gap:8px}
+  .chip{padding:3px 10px; font-size:12px; border:1px solid var(--line); border-radius:2px; cursor:pointer; color:var(--muted)}
+  .chip.on{color:var(--amber); border-color:var(--amber)}
+  #sidebody{flex:1; overflow-y:auto; padding:12px 16px 20px}
+  .flow{border:1px solid var(--line); border-radius:4px; margin-bottom:10px; overflow:hidden}
+  .flow>.t{padding:9px 12px; cursor:pointer; font-weight:600; color:#e2e8f0; display:flex; justify-content:space-between}
+  .flow>.t small{color:var(--muted); font-weight:400}
+  .flow ol{display:none; list-style:none; counter-reset:st}
+  .flow.open ol{display:block}
+  .flow li{
+    counter-increment:st; padding:8px 12px 8px 38px; position:relative; cursor:pointer;
+    border-top:1px solid var(--line); font-size:12.5px; color:var(--ink);
+  }
+  .flow li::before{
+    content:counter(st); position:absolute; left:12px; top:9px; width:17px; height:17px;
+    border:1px solid var(--muted); border-radius:50%; font-size:10px; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; font-family:"SF Mono",Menlo,monospace;
+  }
+  .flow li.on{background:rgba(251,191,36,.12); color:#fde68a}
+  .flow li.on::before{border-color:var(--amber); color:var(--amber)}
+  .insp h3{font-size:16px; color:#fde68a; margin-bottom:8px}
+  .insp section{margin-bottom:14px}
+  .insp b{color:#e2e8f0; font-size:12px; display:block; margin-bottom:3px; letter-spacing:.08em}
+  .insp p, .insp li{font-size:12.5px; color:var(--ink)}
+  .insp ul{padding-left:16px}
+  .insp .dt{color:#fca5a5; font-size:12px; cursor:pointer}
+  .insp .dt:hover{text-decoration:underline}
+  .insp code{color:var(--store); font-size:11.5px}
+  .hint{color:var(--muted); font-size:12px; padding:8px 0}
+
+  /* ===== 债务页 ===== */
+  #debtview{flex:1; overflow-y:auto; padding:20px 28px 40px; display:none}
+  .debtgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; margin-top:14px}
+  .dcard{border:1px solid var(--line); border-left:3px solid var(--debt); border-radius:4px; background:var(--panel); padding:13px 15px}
+  .dcard.sev-中{border-left-color:var(--amber)} .dcard.sev-低{border-left-color:#64748b}
+  .dcard h3{font-size:14.5px; color:#e2e8f0; margin-bottom:6px}
+  .dcard h3 .did{color:var(--debt); font-family:"SF Mono",Menlo,monospace; font-size:12px; margin-right:6px}
+  .dcard.sev-中 h3 .did{color:var(--amber)} .dcard.sev-低 h3 .did{color:#94a3b8}
+  .dcard .sev{float:right; font-size:10.5px; color:var(--muted); border:1px solid var(--line); padding:1px 7px; border-radius:2px}
+  .dcard p{font-size:12px; color:var(--ink); margin-bottom:6px}
+  .dcard .ev{font-size:11px; color:var(--muted)}
+  .dcard .ev code{color:var(--store); font-size:10.5px}
+  .dcard .rem{font-size:12px; color:#86efac; margin-top:6px}
+  .dcard .rem::before{content:"补救 "; color:var(--muted); font-size:10.5px}
+  .grouphead{margin:22px 0 2px; color:var(--amber); font-size:13px; letter-spacing:.2em; font-family:"SF Mono",Menlo,monospace}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>VibeReader Knowledge Workbench <em>· Architecture 0</em></h1>
+  <span class="meta">从代码证据重构 · 2026-08-31 · 配套文档 docs/design/workbench-architecture-0/DESIGN.md</span>
+  <nav class="tabs">
+    <button class="tab on" data-v="arch">架构总览</button>
+    <button class="tab" data-v="debt">架构债清单 (18)</button>
+  </nav>
+</header>
+
+<main>
+  <div id="stage">
+    <svg id="arch" viewBox="0 0 1640 1020" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="zoombar">
+      <button id="zout" title="缩小">−</button>
+      <button id="zin" title="放大">+</button>
+      <button id="zfit" title="适配" style="width:40px">Fit</button>
+    </div>
+    <div class="legend">
+      <i style="border-color:#93c5fd"></i>HTTP 调用　<i style="border-color:#a3e635"></i>存储读写　<i style="border-color:#818cf8"></i>契约/测试引用　<i style="border-color:#f87171"></i>风险/债务　<i style="border-color:#fbbf24"></i>流程追踪<br>
+      点击节点查看职责 · 点击右侧流程逐步追踪 · 拖拽平移 / 滚轮缩放
+    </div>
+  </div>
+
+  <aside id="archside">
+    <div class="head">
+      <span class="chip on" data-p="flows">关键流程</span>
+      <span class="chip" data-p="insp">检查器</span>
+    </div>
+    <div id="sidebody"></div>
+  </aside>
+
+  <div id="debtview"></div>
+</main>
+
+<script>
+/* ================= 数据 ================= */
+const NODES = {
+  "mgmt":{name:"workbench 根仓（管理资产）",role:"产品生命周期文档、ADR、根脚本、共享契约的唯一版本化归属；不承载应用代码。",tech:"Git 仓 · yishuship 生命周期 (.ship) · Markdown ADR (DEC-0001~0007)",
+    conn:["shared-contracts → Reader/UniRAG 双侧契约测试引用","docs/ 对两个子仓只做治理，不做运行时调用"],
+    debts:["D2 契约 fixtures 靠相对路径遍历查找，子仓独立 clone 时防护失效"]},
+  "r-ui":{name:"Reader UI（React + Zustand）",role:"阅读主界面：PDF/Markdown 阅读、标注、对话、卡片、思维树。内存态用 Zustand store，持久化一律下探到服务桥接层。",tech:"React · Zustand · Vite · Tauri WebView",
+    conn:["→ 服务桥接层（唯一持久化入口）","→ 外部 LLM API（三级降级第 ③ 级直连 chatStream）"],
+    debts:["D7 UI 曾依赖模型文案字符串判定成功（已修复为结构化 toolOutcome）","D8 PDF 正文不持久化，恢复依赖重开文件"]},
+  "r-agent":{name:"Agent 框架（浏览器侧）",role:"阅读 agent 运行时：模型↔工具循环（maxIterations=4）、任务持久化、深读流水线 overview→attention→card+critic、7 技能注册表。",tech:"纯 JS · modelFactory 本地确定性模型兜底 · LLM 可选（OpenAI 兼容）· 提示词单一来源 docs/reading-agent-skills/*.md",
+    conn:["工具调用 → knowledge_search / memory_save 等（经服务桥接层）","任务记录 → task_records 表"],
+    debts:["D9 提示词三份并存（已修复为 md 单一来源）"]},
+  "r-svc":{name:"服务桥接层（src/services）",role:"前端与一切外部世界的唯一边界：文档身份、UniRAG HTTP 客户端、知识入库轮询、记忆沉淀、artifact/标注 CRUD、Tauri↔浏览器双轨存储。",tech:"ragEngineAdapter · documentKnowledgeService · savedMemoryService · persistentStorage",
+    conn:["→ Tauri Rust 权威存储（storage_* 命令）","→ UniRAG（HTTP :8766：query / ingest/jobs / memory/jobs / health）","→ 浏览器回退存储（无 Tauri 时）"],
+    debts:["D3 双轨存储分支贯穿所有 service，浏览器端碎片化","D6 UniRAG 适配器实例散落，health 语义三处不一致"]},
+  "r-rust":{name:"Tauri Rust 权威存储",role:"桌面端唯一的权威数据落点：13 张 SQLite 表覆盖文档、正文、标注、卡片、会话、思维树、source_spans 索引、任务记录；含文档↔UniRAG 链接列（D4 修复后）。",tech:"rusqlite · vibereader.sqlite3 · 30+ storage_* 命令",
+    conn:["← 服务桥接层读写","documents 表新增 unirag_source_id / knowledge_status 列"],
+    debts:["D4 入库链接已从 localStorage 提升入 SQLite（已修复）"]},
+  "r-web":{name:"浏览器回退存储（无 Tauri）",role:"纯浏览器运行时的降级落点：会话在 IndexedDB，文档/卡片/标注在 localStorage，模型配置与 API key 始终在 localStorage。",tech:"IndexedDB (ai-chat-db) · localStorage 多个 key",
+    conn:["← 服务桥接层双轨分支"],
+    debts:["D3 存储碎片化：会话 IndexedDB vs 文档 localStorage，无迁移路径","D5 API key 明文 localStorage + zustand 副本 + 转发 UniRAG"]},
+  "u-api":{name:"UniRAG FastAPI 服务",role:"本地 RAG 后端：25+ 端点（query、ingest/jobs 异步、memory/jobs 同步 fast-path、kbs、sessions、export）。job 状态在内存字典。",tech:"FastAPI · prefix=/api · CORS 仅 localhost · 默认 :8766",
+    conn:["← Reader HTTP 调用（含 provider+api_key 透传）","→ 本地存储层（Chroma/BM25/SQLite/uploads）","→ 外部：LLM API、MinerU、yt-dlp/BBDown"],
+    debts:["D11 job 内存态重启即失且无界增长","D17 无鉴权，Docker 暴露 8766","D18 非默认 KB 每请求重建 pipeline 重载重排模型"]},
+  "u-ing":{name:"ingest 管线",role:"文件/URL → 文本：MinerU 云端解析优先（失败回退 PyMuPDF），标题分块（长段 1000 字符），BGE-M3 嵌入，启发式质量过滤，CLIP 视觉通道可选；解析全文写 parsed sidecar（D14 修复后）。",tech:"MinerU v4 · PyMuPDF · BGE-M3 · CLIP ViT-B/32 · link_extractors (YouTube→Bilibili→Trafilatura)",
+    conn:["→ data/uploads（权威原文）","→ parsed/<source_id>.md sidecar","→ Chroma + BM25 双写"],
+    debts:["D12 Chroma/BM25 双写无事务，并发 last-writer-wins","D17 URL 入库 SSRF 检查存在 rebinding 窗口"]},
+  "u-ret":{name:"retrieve + cite 管线",role:"混合检索（向量×3 + BM25×3 合并）→ bge-reranker-base 重排；引用正则抽取 [chunk_id:n] → locator 定位 span（优先 sidecar）→ verifier BGE 相似度 ≥0.45 校验。",tech:"Chroma · rank_bm25+jieba · CrossEncoder · BGE-M3 相似度",
+    conn:["← u-api query 调用","→ memory.db LIKE 召回（不走校验、无条件追加）"],
+    debts:["D14 PDF span 定位已修复（sidecar）","D15 memory LIKE 召回无相关性保证，兜底返回最近记录","D16 sessions 不存 citations，导出重放检索"]},
+  "u-store":{name:"UniRAG 本地存储",role:"data/ 目录：uploads（权威原文）、chroma（默认库+每 KB 独立目录+视觉 collection）、bm25/docs.json、memory.db、sessions.db、kbs.db、visual_tiles、parsed sidecar。",tech:"Chroma PersistentClient · SQLite ×3 · JSON",
+    conn:["← ingest/retrieve 读写"],
+    debts:["D12 无删除端点索引只增不减；删 KB 留孤儿目录；CASCADE 失效","D13 Docker env 错位已修复（UNI_RAG_DATA_DIR_PATH）"]},
+  "ext":{name:"外部依赖",role:"MinerU 云端 PDF 解析（REST+OSS 上传，300s 轮询）；LLM API（Anthropic SDK，provider 动态初始化，key 由 Reader 透传）；yt-dlp/BBDown subprocess 拉取视频字幕/音频。",tech:"REST · subprocess · SDK",
+    conn:["← u-ing / u-ret / Reader 直连"],
+    debts:["D5 API key 经 query body 透传到 UniRAG 进程"]},
+};
+const EDGES = [
+  {id:"e1", from:"r-svc", to:"r-rust", label:"storage_* 命令", cls:"edge", store:true},
+  {id:"e2", from:"r-svc", to:"r-web", label:"浏览器回退（双轨）", cls:"edge dashed", debt:"D3"},
+  {id:"e3", from:"r-svc", to:"u-api", label:"HTTP :8766  query / ingest / memory jobs", cls:"edge", main:true},
+  {id:"e3b", from:"r-svc", to:"u-api", label:"api_key 透传 · health 30s 轮询", cls:"edge red", debt:"D5"},
+  {id:"e4", from:"r-agent", to:"r-svc", label:"工具调用", cls:"edge"},
+  {id:"e5", from:"u-api", to:"u-ing", label:"", cls:"edge"},
+  {id:"e6", from:"u-ing", to:"u-store", label:"双写 Chroma+BM25 · sidecar", cls:"edge", store:true, debt:"D12"},
+  {id:"e7", from:"u-api", to:"u-ret", label:"", cls:"edge"},
+  {id:"e8", from:"u-ret", to:"u-store", label:"检索/校验读", cls:"edge", store:true},
+  {id:"e9", from:"u-ing", to:"ext", label:"MinerU / yt-dlp", cls:"edge dashed"},
+  {id:"e10", from:"u-api", to:"ext", label:"LLM API", cls:"edge dashed"},
+  {id:"e11", from:"r-ui", to:"ext", label:"三级降级③：本地检索后直连 LLM", cls:"edge red dashed"},
+  {id:"e12", from:"mgmt", to:"u-api", label:"契约 fixtures（测试引用）", cls:"edge dotted", debt:"D2"},
+  {id:"e13", from:"mgmt", to:"r-svc", label:"", cls:"edge dotted"},
+];
+const FLOWS = [
+  {name:"导入 → 知识入库", steps:[
+    {t:"Tauri dialog 读取本地文件（PDF/MD/HTML）", n:["r-ui","r-svc"]},
+    {t:"文档元数据 + 正文 + source_spans 切块落 SQLite", n:["r-svc","r-rust"]},
+    {t:"health 可用 → 自动 POST /api/ingest/jobs", n:["r-svc","u-api"]},
+    {t:"MinerU 云端解析（失败回退 PyMuPDF）", n:["u-ing","ext"]},
+    {t:"解析全文写 parsed/<source_id>.md sidecar（D14 修复）", n:["u-ing","u-store"], fx:true},
+    {t:"分块 → BGE-M3 嵌入 → Chroma + BM25 双写", n:["u-ing","u-store"]},
+    {t:"Reader 1.5s×240 轮询 job 直到完成", n:["r-svc","u-api"]},
+    {t:"link 状态写 SQLite documents 表（D4 修复）", n:["r-rust"], fx:true},
+  ]},
+  {name:"提问 · 三级降级", steps:[
+    {t:"① Agent QA 开关开启 → knowledge_qa 工具循环", n:["r-agent"]},
+    {t:"② UniRAG health 可用且文档入库完成 → POST /api/query（includeMemory，透传 provider+api_key）", n:["r-svc","u-api"]},
+    {t:"memory LIKE 召回（不校验，无条件追加 citation）", n:["u-ret"], debt:"D15"},
+    {t:"混合检索：向量×3 + BM25×3 → CrossEncoder 重排", n:["u-ret","u-store"]},
+    {t:"LLM 生成（强制 [chunk_id:n] 引用格式）→ 引用定位+相似度校验", n:["u-api","ext"]},
+    {t:"③ 全部不可用 → 本地 source_spans 关键词检索拼 prompt，直连 LLM 流式", n:["r-ui","ext"]},
+  ]},
+  {name:"保存记忆（知识飞轮）", steps:[
+    {t:"createArtifact 先落 SQLite（卡片本体永远先保本地）", n:["r-svc","r-rust"]},
+    {t:"UniRAG 可用 → POST /api/memory/jobs（contract reader-unirag-memory-v1）", n:["r-svc","u-api"]},
+    {t:"同步 completed fast-path：memory_id=job_id，失败也返回 HTTP 200+status", n:["u-api","u-store"]},
+    {t:"不可用 → 本地 fallback 提示「已保存在本地」", n:["r-ui"]},
+  ]},
+  {name:"引用 grounding 校验链", steps:[
+    {t:"正则抽取答案中的 [chunk_id:n]", n:["u-ret"]},
+    {t:"locator 优先读 parsed sidecar 定位 span（D14 修复前对二进制 PDF 失效）", n:["u-ret","u-store"], fx:true},
+    {t:"verifier：BGE-M3 余弦相似度 ≥0.45 才算 verified", n:["u-ret"]},
+    {t:"saved_memory citations 无条件追加（ Reader 端直接还原 sourceRefs）", n:["u-ret","r-ui"], debt:"D15"},
+  ]},
+];
+const DEBTS = [
+  {g:"跨仓 / 契约层", items:[
+    {id:"D1",t:"ARCHITECTURE.md 与实现严重脱节",sev:"中",p:"文档称 Chroma 在 ~/.uni-rag/db、PDF 用 pdfplumber、端口 5173/5001，实际全不对，且缺 memory/session/KB 整层。后续决策以过时图为起点。",ev:"docs/ARCHITECTURE.md vs src/uni_rag/config.py",r:"已重写（本次修复），约定随交付更新。"},
+    {id:"D2",t:"契约 fixtures 靠相对路径遍历查找",sev:"中",p:"子仓独立 clone 时两侧契约测试失效，漂移防护只在 workbench 全目录下成立。",ev:"test_contract_v1.py:30-44 · contract.v1.test.js",r:"已加 VIBEREADER_CONTRACTS_DIR 环境变量优先（双侧）；cutover 后可彻底消除。"},
+  ]},
+  {g:"Reader（apps/reader）", items:[
+    {id:"D3",t:"双轨存储分支贯穿所有 service，浏览器端碎片化",sev:"高",p:"每个 service 重复 if(Tauri)…else localStorage；会话在 IndexedDB、文档/卡片/标注在 localStorage，无迁移路径。新增数据域要写两遍。",ev:"persistentStorage.js:355-404 · artifactService.js:116-134",r:"收敛到 persistentStorage 单一网关 + 统一 IndexedDB 回退（待立项）。"},
+    {id:"D4",t:"文档↔UniRAG 入库链接只存 localStorage",sev:"高",p:"换机/清数据后「已入库」状态丢失 → 重复 ingest（6 分钟轮询+重复嵌入）或错误降级。",ev:"documentKnowledgeService.js:6 · core/storage.rs 无该表",r:"已修复：documents 表新增 unirag_source_id/knowledge_status 列 + 幂等迁移 + 新命令。"},
+    {id:"D5",t:"API key 明文多路扩散",sev:"高",p:"localStorage 权威 + zustand 副本 + 原样进 UniRAG query body 的 api_key 字段 + baseURL 无 host 白名单。任何 XSS/恶意依赖可窃取。",ev:"storage.js:190-204 · App.jsx:1646-1650 · ragEngineAdapter.js:489-493",r:"短期 key 不进 query body；长期 Tauri keychain/stronghold（待立项）。"},
+    {id:"D6",t:"UniRAG 适配器实例散落，health 语义三处不一致",sev:"中",p:"App 层 5 处 new adapter + 30s 轮询、工具层独立 health 检查、savedMemoryService 完全不查；router.buildRetrievalContext 恒走 local（半成品）。",ev:"App.jsx:533,610,1257,1356,1639 · ragEngineAdapter.js:648-655",r:"单例 adapter + 单一 health source；删除或完成 router。"},
+    {id:"D7",t:"UI 依赖模型输出字符串判定成功",sev:"中",p:"content.includes('Created 3 source-grounded VibeCards.') 触发 toast，提示词一改 UI 静默失效。",ev:"App.jsx:942-948",r:"已修复：taskRunner 聚合结构化 toolOutcome，App 读结构化字段。"},
+    {id:"D8",t:"PDF 正文不持久化，本地/远端知识状态不对称",sev:"中",p:"PDF 重开才能读，但 UniRAG 可能已完成入库——知识在远端本地却打不开。",ev:"App.jsx:91,1453-1456",r:"document_contents 增加 PDF 提取文本列，或恢复时走 UniRAG source 反查。"},
+    {id:"D9",t:"skill 提示词三份并存漂移",sev:"低",p:"skills.js 内嵌 + modelFactory 硬编码兜底表 + docs/*.md 三处内容无一致性校验。",ev:"skills.js:13-21 · modelFactory.js:27-80",r:"已修复：md 文件单一来源，代码只引用不内嵌。"},
+    {id:"D10",t:"AI 服务三套实现，两套死代码",sev:"低",p:"customOpenAI/customAnthropic 完整保留但零引用，有误用风险。",ev:"aiService.js:1-4 注释",r:"已修复：两个文件已删除。"},
+  ]},
+  {g:"UniRAG（services/uni-rag）", items:[
+    {id:"D11",t:"单进程内存态 job 系统且无界增长",sev:"中",p:"_ingest_jobs/_memory_jobs 模块级字典，重启即失、只写不删；Reader 重启后无效轮询 6 分钟。",ev:"routes.py:36,45-47",r:"job 状态落 SQLite + 定期淘汰。"},
+    {id:"D12",t:"Chroma/BM25 双写无事务 + 索引只增不减",sev:"高",p:"逐条 add 后 BM25 全量重写 docs.json，并发 last-writer-wins；无删除端点；删 KB 留孤儿目录；CASCADE 因 foreign_keys=OFF 失效。",ev:"ingest/pipeline.py:118-140 · bm25.py:22-34 · kb.py:72",r:"删除端点 + per-source 幂等 + PRAGMA foreign_keys（待立项）。"},
+    {id:"D13",t:"Docker 数据目录 env 错位（真 bug）",sev:"高",p:"容器设 UNI_RAG_DATA_DIR 但代码读 UNI_RAG_DATA_DIR_PATH，数据落镜像层而非挂载卷，容器重建全丢。",ev:"Dockerfile:47-49 vs config.py:9-15",r:"已修复：env 改名 + 启动日志打印 data_dir。"},
+    {id:"D14",t:"PDF 引用 span 定位失效",sev:"高",p:"对二进制 PDF 直接 read_text 定位 span 必然失败；MinerU 路径丢页码。PDF 的 grounding jump 无效，伤害核心卖点。",ev:"rag/pipeline.py:190-192 · parsers.py:38-39",r:"已修复：ingest 写 parsed/<source_id>.md sidecar，定位优先读 sidecar。"},
+    {id:"D15",t:"memory 召回 LIKE + 兜底返回最近",sev:"中",p:"注释自述兜底是为让 smoke tests 通过；「长期知识记忆」叙事下召回质量无保证，不相关 citation 污染答案。",ev:"memory.py:79-81,195-232",r:"用 BGE-M3 给 saved_memories 加向量列（模型已在进程内）。"},
+    {id:"D16",t:"会话只存 role+content",sev:"中",p:"citations 不落库，导出时重放检索重推引用（与当时展示可能不一致）；append 先 SELECT MAX(seq) 再 INSERT 有并发主键风险。",ev:"session/store.py:14-42 · routes.py:846-864",r:"messages 加 citations_json + 时间戳；INSERT 自增主键。"},
+    {id:"D17",t:"无鉴权 + 暴露面",sev:"中",p:"全端点无 auth，X-API-Key 只是 LLM 透传；Docker 暴露 8766；SSRF 检查有 rebinding 窗口。局域网设备可读写知识库并借用 key。",ev:"routes.py 全部端点 · Dockerfile:51-52",r:"默认绑 127.0.0.1；compose 场景加共享 token。"},
+    {id:"D18",t:"非默认 KB 每请求重建 pipeline",sev:"低",p:"每次 new RAGPipeline → 重载 bge-reranker-base；Embedder 有 lru_cache 而 Reranker 没有。",ev:"routes.py:664-666 · retriever.py:26",r:"KB→pipeline 字典缓存。"},
+  ]},
+];
+
+/* ================= SVG 构建 ================= */
+const svg = document.getElementById('arch');
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); (parent||svg).appendChild(e); return e; }
+function txt(x,y,s,cls,parent){ const t=el('text',{x,y,class:cls||''},parent); t.textContent=s; return t; }
+
+const BANDS=[
+  {y:36,  t:'PRODUCT GOVERNANCE'},
+  {y:196, t:'CLIENT · apps/reader'},
+  {y:546, t:'CLIENT AUTHORITY'},
+  {y:196, t:'', x:800, w:830, service:true},
+  {y:546, t:'SERVICE STORAGE · services/uni-rag/data', x:800},
+  {y:790, t:'EXTERNAL', x:800},
+];
+function drawBands(){
+  const band=(x,y,w,h,label)=>{
+    el('rect',{x,y,width:w,height:h,fill:'none',stroke:'rgba(148,163,184,.10)','stroke-dasharray':'3 5',rx:6});
+    txt(x+12,y-8,label,'bandlabel');
+  };
+  band(20,60,770,120,'PRODUCT GOVERNANCE');
+  band(20,220,770,410,'CLIENT · apps/reader');
+  band(20,590,770,170,'CLIENT AUTHORITY · Tauri / Browser');
+  band(800,220,820,410,'SERVICE · services/uni-rag');
+  band(800,590,820,170,'SERVICE STORAGE · data/');
+  band(800,830,820,140,'EXTERNAL');
+}
+const BOX = {
+  'mgmt':  {x:40,  y:78,  w:360, h:86,  s:'docs/ ADR · .ship 生命周期 · scripts', m:'packages/shared-contracts/…/v1', debts:['D2']},
+  'r-ui':  {x:40,  y:246, w:330, h:100, s:'React 18 · Zustand · Tauri WebView', m:'PDF/MD 阅读 · 标注 · 对话 · 卡片', debts:['D7','D8']},
+  'r-agent':{x:40,  y:386, w:330, h:120, s:'runtime 循环 · taskRunner · multiAgent', m:'7 技能 · 提示词=docs/*.md 单一来源', debts:['D9']},
+  'r-svc': {x:420, y:246, w:330, h:260, s:'唯一外部边界 / 双轨存储网关', m:'ragEngineAdapter · knowledgeService', m2:'savedMemoryService · persistentStorage', debts:['D3','D6']},
+  'r-rust':{x:40,  y:616, w:350, h:120, s:'vibereader.sqlite3 · 13 表 · 30+ 命令', m:'documents+unirag_source_id/knowledge_status', debts:['D4']},
+  'r-web': {x:420, y:616, w:340, h:120, s:'IndexedDB(会话) · localStorage(文档/卡片)', m:'ai-chat.modelConfigs ← API key 明文', debts:['D3','D5']},
+  'u-api': {x:820, y:246, w:420, h:280, s:'FastAPI · prefix=/api · :8766', m:'query · ingest/jobs · memory/jobs', m2:'kbs · sessions · export · health', debts:['D11','D17','D18']},
+  'u-ing': {x:820, y:398, w:0,   h:0,  inner:true},
+  'u-ret': {x:820, y:398, w:0,   h:0,  inner:true},
+  'u-store':{x:820,y:616, w:420, h:120, s:'uploads · chroma · bm25 · parsed/', m:'memory.db · sessions.db · kbs.db', debts:['D12','D13']},
+  'ext':   {x:820, y:856, w:420, h:96,  s:'MinerU 云端解析 · LLM API(Anthropic SDK)', m:'yt-dlp / BBDown (subprocess)', debts:['D5']},
+};
+function drawNodes(){
+  for(const id in BOX){
+    const b=BOX[id]; if(b.inner) continue;
+    const g=el('g',{class:'node','data-id':id});
+    el('rect',{class:'box',x:b.x,y:b.y,width:b.w,height:b.h,rx:4},g);
+    txt(b.x+14,b.y+24,NODES[id].name,'t',g);
+    txt(b.x+14,b.y+44,b.s,'s',g);
+    txt(b.x+14,b.y+63,b.m,'m',g);
+    if(b.m2) txt(b.x+14,b.y+80,b.m2,'m',g);
+    (b.debts||[]).forEach((d,i)=>{
+      const bx=b.x+b.w-34, by=b.y+8+i*15;
+      el('rect',{class:'badge',x:bx,y:by,width:27,height:12,rx:2},g);
+      txt(bx+4,by+9.5,d,'',g);
+    });
+    g.addEventListener('click',ev=>{ev.stopPropagation(); inspect(id);});
+  }
+  // u-api 内部模块行
+  const g=el('g',{class:'node','data-id':'u-api'});
+  txt(834, 510,'模块：api/routes(25+端点) · ingest(MinerU→chunk→embed) · retrieve(混合+重排) · cite(locator+verifier≥0.45)','m',g);
+}
+function anchor(id,side){
+  const b=BOX[id];
+  if(side==='r') return {x:b.x+b.w, y:b.y+b.h/2};
+  if(side==='l') return {x:b.x, y:b.y+b.h/2};
+  if(side==='t') return {x:b.x+b.w/2, y:b.y};
+  return {x:b.x+b.w/2, y:b.y+b.h};
+}
+function edgeD(e){
+  const a=anchor(e.from, e.from==='r-ui'&&e.to==='ext'?'r':'r');
+  let A,B;
+  if(e.id==='e1'){A=anchor('r-svc','b');B=anchor('r-rust','t');}
+  else if(e.id==='e2'){A={x:BOX['r-svc'].x+80,y:BOX['r-svc'].y+BOX['r-svc'].h};B=anchor('r-web','t');}
+  else if(e.id==='e3'){A={x:BOX['r-svc'].x+BOX['r-svc'].w,y:300};B={x:BOX['u-api'].x,y:300};}
+  else if(e.id==='e3b'){A={x:BOX['r-svc'].x+BOX['r-svc'].w,y:420};B={x:BOX['u-api'].x,y:420};}
+  else if(e.id==='e4'){A=anchor('r-agent','r');B={x:BOX['r-svc'].x,y:BOX['r-svc'].y+200};}
+  else if(e.id==='e5'){A={x:920,y:BOX['u-api'].y+BOX['u-api'].h};B={x:920,y:BOX['u-store'].y};}
+  else if(e.id==='e6'){A={x:920,y:BOX['u-store'].y};B={x:920,y:BOX['u-store'].y};}
+  else if(e.id==='e7'){A={x:1140,y:BOX['u-api'].y+BOX['u-api'].h};B={x:1140,y:BOX['u-store'].y};}
+  else if(e.id==='e8'){A={x:1140,y:BOX['u-store'].y};B={x:1140,y:BOX['u-store'].y};}
+  else if(e.id==='e9'){A={x:900,y:BOX['u-store'].y+BOX['u-store'].h};B={x:900,y:BOX['ext'].y};}
+  else if(e.id==='e10'){A={x:1160,y:BOX['u-store'].y+BOX['u-store'].h};B={x:1160,y:BOX['ext'].y};}
+  else if(e.id==='e11'){A={x:BOX['r-ui'].x+BOX['r-ui'].w,y:280};B={x:BOX['ext'].x,y:BOX['ext'].y+70};}
+  else if(e.id==='e12'){A={x:BOX['mgmt'].x+BOX['mgmt'].w,y:100};B={x:BOX['u-api'].x,y:250};}
+  else {A=anchor('mgmt','b');B=anchor('r-svc','t');}
+  const mx=(A.x+B.x)/2;
+  return `M${A.x},${A.y} C${mx},${A.y} ${mx},${B.y} ${B.x},${B.y}`;
+}
+const edgeEls={};
+function drawEdges(){
+  EDGES.forEach(e=>{
+    if(e.id==='e6'||e.id==='e8') return; // 垂直短线由 e5/e7 覆盖
+    const p=el('path',{class:e.cls,d:edgeD(e),'data-eid':e.id});
+    if(e.debt){
+      const mid=p.getPointAtLength(p.getTotalLength()*0.5);
+      el('rect',{class:'badge',x:mid.x+6,y:mid.y-14,width:27,height:12,rx:2});
+      txt(mid.x+10,mid.y-4.5,e.debt,'');
+    }
+    if(e.label){
+      const mid=p.getPointAtLength(p.getTotalLength()*(e.id==='e3b'?0.5:0.5));
+      const t=txt(mid.x, mid.y-6, e.label, 'elabel'+(e.cls.includes('red')?' red':''));
+      t.setAttribute('text-anchor','middle');
+    }
+    edgeEls[e.id]=p;
+  });
+}
+function drawAll(){ drawBands(); drawEdges(); drawNodes(); }
+drawAll();
+
+/* ================= 缩放平移 ================= */
+let vb={x:0,y:0,w:1640,h:1020};
+function applyVB(){ svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+function zoom(f,cx,cy){
+  const nw=Math.min(4000,Math.max(500,vb.w*f)); const r=nw/vb.w;
+  cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
+  vb={x:cx-(cx-vb.x)*r, y:cy-(cy-vb.y)*r, w:nw, h:vb.h*r}; applyVB();
+}
+svg.addEventListener('wheel',e=>{e.preventDefault(); zoom(e.deltaY>0?1.12:0.89, vb.x+e.offsetX/vb.clientWidth*vb.w, vb.y+e.offsetY/vb.clientHeight*vb.h);},{passive:false});
+let drag=null;
+svg.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y}; svg.classList.add('dragging');});
+window.addEventListener('mousemove',e=>{ if(!drag)return; vb.x=drag.vx-(e.clientX-drag.x)*vb.w/svg.clientWidth; vb.y=drag.vy-(e.clientY-drag.y)*vb.h/svg.clientHeight; applyVB();});
+window.addEventListener('mouseup',()=>{drag=null; svg.classList.remove('dragging');});
+document.getElementById('zin').onclick=()=>zoom(0.8);
+document.getElementById('zout').onclick=()=>zoom(1.25);
+document.getElementById('zfit').onclick=()=>{vb={x:0,y:0,w:1640,h:1020}; applyVB();};
+
+/* ================= 侧栏：流程 & 检查器 ================= */
+const sidebody=document.getElementById('sidebody');
+let curPanel='flows';
+function renderFlows(){
+  sidebody.innerHTML='<div class="hint">点击流程名展开，点击步骤在图上高亮追踪。</div>';
+  FLOWS.forEach((f,fi)=>{
+    const d=document.createElement('div'); d.className='flow';
+    d.innerHTML=`<div class="t">${f.name}<small>${f.steps.length} 步</small></div><ol>${f.steps.map((s,i)=>`<li data-f="${fi}" data-i="${i}">${s.t}${s.fx?' <span style="color:#a3e635">✦本次修复</span>':''}${s.debt?` <span class="dt" data-d="${s.debt}">[${s.debt}]</span>`:''}</li>`).join('')}</ol>`;
+    d.querySelector('.t').onclick=()=>d.classList.toggle('open');
+    d.querySelectorAll('li').forEach(li=>li.onclick=ev=>{
+      if(ev.target.classList.contains('dt')){ showDebt(ev.target.dataset.d); return; }
+      d.querySelectorAll('li').forEach(x=>x.classList.remove('on')); li.classList.add('on');
+      const st=f.steps[+li.dataset.i];
+      document.querySelectorAll('.node').forEach(n=>{
+        n.classList.toggle('hl', st.n.includes(n.dataset.id));
+        n.classList.toggle('dim', !st.n.includes(n.dataset.id));
+      });
+    });
+    sidebody.appendChild(d);
+  });
+}
+function inspect(id){
+  document.querySelectorAll('.node').forEach(n=>n.classList.toggle('hl',n.dataset.id===id));
+  setPanel('insp');
+  const n=NODES[id];
+  sidebody.innerHTML=`<div class="insp">
+    <h3>${n.name}</h3>
+    <section><b>职责</b><p>${n.role}</p></section>
+    <section><b>技术</b><p>${n.tech}</p></section>
+    <section><b>连接</b><ul>${n.conn.map(c=>`<li>${c}</li>`).join('')}</ul></section>
+    ${n.debts?`<section><b>相关架构债</b>${n.debts.map(d=>`<p class="dt" data-d="${d}">${d} · ${DEBTS.flatMap(g=>g.items).find(x=>x.id===d)?.t||''}</p>`).join('')}</section>`:''}
+    <p class="hint">点击左上「关键流程」返回流程列表。</p>
+  </div>`;
+  sidebody.querySelectorAll('.dt').forEach(x=>x.onclick=()=>showDebt(x.dataset.d));
+}
+function setPanel(p){
+  curPanel=p;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.p===p));
+  if(p==='flows'){ clearHL(); renderFlows(); }
+}
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>setPanel(c.dataset.p));
+function clearHL(){ document.querySelectorAll('.node').forEach(n=>{n.classList.remove('hl','dim');}); }
+svg.addEventListener('click',()=>{ if(curPanel==='insp') setPanel('flows'); else clearHL(); });
+
+/* ================= 债务页 ================= */
+const debtview=document.getElementById('debtview');
+function renderDebts(){
+  debtview.innerHTML=`<h2 style="color:#e2e8f0;font-size:18px">架构债清单 · 18 项</h2>
+  <p style="color:var(--muted);font-size:12.5px;margin-top:4px">严重度 = 影响面 × 可逆性。✦ 绿字 = 本次已修复（D1 D2 D4 D7 D9 D10 D13 D14）。证据均为代码文件引用。</p>
+  <div id="dg"></div>`;
+  const dg=debtview.querySelector('#dg');
+  DEBTS.forEach(g=>{
+    const h=document.createElement('div'); h.className='grouphead'; h.textContent=g.g; dg.appendChild(h);
+    const grid=document.createElement('div'); grid.className='debtgrid'; dg.appendChild(grid);
+    g.items.forEach(d=>{
+      const fixed=d.r.startsWith('已修复')||d.r.includes('已修复');
+      const c=document.createElement('div'); c.className='dcard sev-'+d.sev;
+      c.innerHTML=`<span class="sev">${d.sev} · ${fixed?'已修复':'待处理'}</span><h3><span class="did">${d.id}</span>${d.t}</h3><p>${d.p}</p><p class="ev">证据 <code>${d.ev}</code></p><p class="rem">${d.r}</p>`;
+      grid.appendChild(c);
+    });
+  });
+}
+function showDebt(id){ switchView('debt'); debtview.scrollTop=0; const card=[...debtview.querySelectorAll('.dcard')].find(c=>c.textContent.includes(id)); if(card){card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.outline='1px solid var(--amber)'; setTimeout(()=>card.style.outline='',1600);} }
+
+/* ================= 视图切换 ================= */
+function switchView(v){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===v));
+  document.getElementById('stage').style.display=v==='arch'?'':'none';
+  document.getElementById('archside').style.display=v==='arch'?'':'none';
+  debtview.style.display=v==='debt'?'block':'none';
+  if(v==='debt') renderDebts();
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>switchView(t.dataset.v));
+renderFlows();
+</script>
+</body>
+</html>

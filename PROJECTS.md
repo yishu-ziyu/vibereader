@@ -1,6 +1,6 @@
 # VibeReader Knowledge Workbench Project Index
 
-Updated: 2026-07-03
+Updated: 2026-08-13
 
 ## Canonical Local Root
 
@@ -18,8 +18,6 @@ vibereader-knowledge-workbench/
     reader/          # active VibeReader app
   services/
     uni-rag/         # local RAG backend / knowledge module
-  legacy/
-    vibero/          # historical/reference Vibero repository
   docs/
   .ship/
 ```
@@ -30,7 +28,9 @@ vibereader-knowledge-workbench/
 | --- | --- | --- | --- |
 | `apps/reader` | Reader-first app, desktop/web UI, notes/cards/citations | `https://github.com/yishu-ziyu/VibeReader.git` | Main active development |
 | `services/uni-rag` | Local RAG backend, ingest/query/citations/memory backend | `https://github.com/yishu-ziyu/uni-rag.git` | Active backend integration |
-| `legacy/vibero` | Original/reference Vibero/Zotero-style codebase | `https://github.com/chenyu-xjtu/Vibero.git` | Reference only unless explicitly revived |
+| `apps/vibereader-macos` | VibeReader for Mac: native macOS edition, PageFlow fork (Apache-2.0) + UniRAG AI | 无远端（DEC-0009，push 时机后定） | New: native edition bootstrap |
+
+Author Vibero local copies were deleted on 2026-08-13 (`legacy/vibero`, `黑客松/_apps`, `黑客松/_downloads`). Do not restore them. Independent development continues on Reader + UniRAG only.
 
 ## Compatibility Symlinks
 
@@ -42,9 +42,6 @@ The old paths are retained as symlinks so existing scripts, shells, and muscle m
 
 /Users/mahaoxuan/Desktop/AI产品经理/uni-rag
   -> /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench/services/uni-rag
-
-/Users/mahaoxuan/Desktop/黑客松/阅读器/Vibero
-  -> /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench/legacy/vibero
 ```
 
 Treat the new paths as canonical in new docs, prompts, scripts, and future commits.
@@ -54,7 +51,7 @@ Treat the new paths as canonical in new docs, prompts, scripts, and future commi
 - `apps/reader` Reading Agent Wave 17 shipped: commit on VibeReader `main` (feat agent harness); handoff `docs/AGENT_CONTINUE.md`. Prior contract: `4ec8191`.
 - `services/uni-rag` is clean after commit `b093749 feat: stabilize reader memory contract` and push to `https://github.com/yishu-ziyu/uni-rag.git`.
 - The workbench root is now a separate Phase C.0 repository for lifecycle docs, scripts, and shared contracts. It intentionally ignores nested code repositories during the gradual migration.
-- `legacy/vibero` currently has uncommitted changes under `ai-chat/`.
+- Author Vibero is gone from disk. Ignore leftover mentions of `legacy/vibero` in older ship notes.
 
 Do not flatten these repositories into a single Git history until dirty worktrees are reviewed and either committed or intentionally archived. Current review record: `.ship/tasks/20260701-vibereader-knowledge-flywheel/qa/codex-review-phase-1-contract-stabilization.md`.
 
@@ -85,7 +82,6 @@ Current cloud state:
 | workbench root | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | product lifecycle docs, shared contracts, scripts |
 | `apps/reader` | `https://github.com/yishu-ziyu/VibeReader.git` | active Reader app |
 | `services/uni-rag` | `https://github.com/yishu-ziyu/uni-rag.git` | active Knowledge/RAG service |
-| `legacy/vibero` | `https://github.com/chenyu-xjtu/Vibero.git` | legacy reference |
 
 Target direction: one product should eventually have one cloud project home. Do not create more scattered remotes for new modules.
 
@@ -137,12 +133,12 @@ Phase C.0: done.
 
 - Initialize the workbench root as a Git repository for product-level assets.
 - Track `packages/shared-contracts`, `docs`, `.ship`, root scripts, `README.md`, and `PROJECTS.md`.
-- Keep `apps/reader`, `services/uni-rag`, and `legacy/vibero` ignored as nested repositories until a later subtree/submodule/flatten decision.
+- Keep `apps/reader` and `services/uni-rag` ignored as nested repositories until a later subtree/submodule/flatten decision.
 - Root remote is created and tracks `origin/main`; continue with the later subtree/submodule/flatten decision only after the nested repositories are reviewed.
 
 Phase C.1: planned.
 
-- Audit root, Reader, UniRAG, and Vibero repository states.
+- Audit root, Reader, and UniRAG repository states.
 - Verify root scripts can run the daily Reader + UniRAG workflow.
 - Choose the monorepo cutover method in DEC-0005.
 - Run a trial cutover branch before changing the source of truth.
@@ -160,7 +156,6 @@ apps/reader
 services/uni-rag
 packages/shared-contracts
 packages/model-providers
-legacy/vibero
 ```
 
 The goal is fewer places to remember, not a risky history rewrite.

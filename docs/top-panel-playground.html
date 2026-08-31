@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VibeReader 顶部面板 · 可调原型</title>
+<style>
+  :root{
+    --accent:#2f6df6;
+    --radius:14px;
+    --gap:20px;
+    --pad:14px;
+    --fs:14px;
+    --bg:var(--surface);
+    --surface:#ffffff;
+    --line:#ececef;
+    --text:#1c1c1e;
+    --text-2:#6b6b73;
+    --text-3:#9a9aa2;
+    --accent-weak:#eaf1ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#eeeeef;color:var(--text);-webkit-font-smoothing:antialiased;height:100vh;
+    display:grid;grid-template-columns:320px 1fr;overflow:hidden}
+
+  /* ===== 左侧控制面板 ===== */
+  .controls{background:#fafafa;border-right:1px solid var(--line);padding:20px 18px;overflow-y:auto}
+  .controls h1{font-size:14px;font-weight:700;margin-bottom:4px}
+  .controls .hint{font-size:12px;color:var(--text-3);margin-bottom:18px;line-height:1.6}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:7px}
+  .field .val{float:right;color:var(--accent);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=color]{width:100%;height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+  select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--text)}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:8px 0;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:12px;color:var(--text-2);cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .toggle{display:flex;align-items:center;justify-content:space-between}
+  .sw{width:42px;height:24px;border-radius:999px;background:#d8d8dc;position:relative;cursor:pointer;transition:background .15s}
+  .sw.on{background:var(--accent)}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+  .sw.on::after{transform:translateX(18px)}
+  .export-btn{width:100%;margin-top:8px;padding:11px;background:var(--text);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+  .export-btn:hover{filter:brightness(1.2)}
+
+  /* ===== 右侧预览 ===== */
+  .preview{position:relative;display:grid;place-items:start center;padding:60px 40px;overflow:auto}
+  .frame{width:100%;max-width:1080px}
+
+  .topbar{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
+    padding:var(--pad) calc(var(--pad) + 4px);display:grid;
+    grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--gap);transition:all .12s}
+  .doc-id{display:flex;align-items:center;gap:12px;min-width:0}
+  .doc-id .glyph{width:34px;height:34px;border-radius:10px;background:var(--accent-weak);color:var(--accent);
+    display:grid;place-items:center;font-size:16px;flex:none}
+  .doc-id .name{font-size:var(--fs);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-id .sub{font-size:calc(var(--fs) - 2px);color:var(--text-3);margin-top:2px}
+  .primary{justify-self:center;display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;
+    font-size:var(--fs);font-weight:600;padding:calc(var(--pad) - 3px) 22px;border:none;
+    border-radius:999px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.12);transition:all .12s}
+  .primary:active{transform:translateY(1px)}
+  .actions{justify-self:end;display:flex;align-items:center;gap:6px}
+  .ghost{display:inline-flex;align-items:center;gap:6px;font-size:calc(var(--fs) - 1px);font-weight:500;
+    padding:8px 12px;border-radius:10px;cursor:pointer;transition:all .12s}
+  .ghost.outline{border:1px solid var(--line);background:#fff;color:var(--text-2)}
+  .ghost.soft{border:none;background:transparent;color:var(--text-2)}
+  .ghost:hover{color:var(--text)}
+  .ghost.soft:hover{background:#f0f0f2}
+  .ghost .dot{width:7px;height:7px;border-radius:50%;background:#3ec78a;flex:none}
+  .divider{width:1px;height:22px;background:var(--line);margin:0 4px}
+  .tabs{margin-top:16px;display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:6px}
+  .tab{flex:1;text-align:center;font-size:calc(var(--fs) - 1px);font-weight:500;color:var(--text-2);
+    padding:9px 0;border-radius:10px;cursor:pointer;transition:all .12s}
+  .tab.active{background:var(--accent-weak);color:var(--accent);font-weight:600}
+  .canvas{margin-top:16px;height:300px;border-radius:var(--radius);border:1px dashed var(--line);
+    background:var(--surface);display:grid;place-items:center;color:var(--text-3);font-size:13px}
+
+  /* 导出弹层 */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;place-items:center;padding:30px}
+  .modal.show{display:grid}
+  .modal .box{background:#fff;border-radius:14px;width:100%;max-width:760px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+  .modal .box h2{font-size:14px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .modal textarea{flex:1;width:100%;border:none;padding:16px 18px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:none;outline:none;line-height:1.5}
+  .modal .bar{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .modal .bar button{padding:8px 16px;border-radius:8px;font-size:13px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .modal .bar .copy{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+  <!-- 控制面板 -->
+  <aside class="controls">
+    <h1>顶部面板 · 实时调</h1>
+    <p class="hint">拖完觉得 OK，点底部「导出代码」，把弹窗里的 HTML 贴给我，我就按那个样子改真实组件。</p>
+
+    <div class="field">
+      <label>强调色</label>
+      <input type="color" id="cAccent" value="#2f6df6" />
+    </div>
+
+    <div class="field">
+      <label>主按钮位置</label>
+      <div class="seg" id="segPos">
+        <button data-v="center" class="on">居中</button>
+        <button data-v="left">靠左</button>
+        <button data-v="right">靠右</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>圆角 <span class="val" id="vRadius">14px</span></label>
+      <input type="range" id="cRadius" min="0" max="24" value="14" />
+    </div>
+
+    <div class="field">
+      <label>间距密度 <span class="val" id="vGap">20</span></label>
+      <input type="range" id="cGap" min="6" max="36" value="20" />
+    </div>
+
+    <div class="field">
+      <label>内边距 <span class="val" id="vPad">14</span></label>
+      <input type="range" id="cPad" min="8" max="26" value="14" />
+    </div>
+
+    <div class="field">
+      <label>字号 <span class="val" id="vFs">14px</span></label>
+      <input type="range" id="cFs" min="12" max="16" value="14" />
+    </div>
+
+    <div class="field">
+      <label>顶栏背景</label>
+      <div class="seg" id="segBg">
+        <button data-v="white" class="on">纯白</button>
+        <button data-v="gray">浅灰</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>次级操作样式</label>
+      <div class="seg" id="segGhost">
+        <button data-v="soft" class="on">弱化灰</button>
+        <button data-v="outline">描边</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>文档标识</label>
+      <div class="toggle">
+        <span style="font-size:12px;color:var(--text-2)">左上角显示文档信息</span>
+        <div class="sw on" id="swDoc"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>竖分隔线</label>
+      <div class="toggle">
+        <span style="font-size:12px;color:var(--text-2)">记忆与设置之间加分隔线</span>
+        <div class="sw on" id="swDiv"></div>
+      </div>
+    </div>
+
+    <button class="export-btn" id="btnExport">导出代码</button>
+  </aside>
+
+  <!-- 预览 -->
+  <main class="preview">
+    <div class="frame">
+      <header class="topbar" id="topbar">
+        <div class="doc-id" id="docId">
+          <div class="glyph">📄</div>
+          <div class="meta">
+            <div class="name">注意力机制综述.pdf</div>
+            <div class="sub">23 个分块 · 已入库</div>
+          </div>
+        </div>
+        <button class="primary">▶ 开始精读</button>
+        <div class="actions">
+          <button class="ghost" id="gUpload">上传文档</button>
+          <button class="ghost"><span class="dot"></span>我的记忆</button>
+          <span class="divider" id="divEl"></span>
+          <button class="ghost">⚙ 设置</button>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <div class="tab active">阅读路线</div>
+        <div class="tab">卡片</div>
+        <div class="tab">笔记</div>
+        <div class="tab">对话</div>
+      </nav>
+
+      <div class="canvas">阅读内容区（示意）</div>
+    </div>
+  </main>
+
+  <!-- 导出弹层 -->
+  <div class="modal" id="modal">
+    <div class="box">
+      <h2>当前面板代码（贴给 AI 即可还原此样态）</h2>
+      <textarea id="out" readonly></textarea>
+      <div class="bar">
+        <button id="btnClose">关闭</button>
+        <button class="copy" id="btnCopy">复制</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const root = document.documentElement;
+const $ = id => document.getElementById(id);
+
+// 状态
+const state = {
+  accent:'#2f6df6', pos:'center', radius:14, gap:20, pad:14, fs:14,
+  bg:'white', ghost:'soft', doc:true, div:true
+};
+
+function apply(){
+  root.style.setProperty('--accent', state.accent);
+  root.style.setProperty('--radius', state.radius+'px');
+  root.style.setProperty('--gap', state.gap+'px');
+  root.style.setProperty('--pad', state.pad+'px');
+  root.style.setProperty('--fs', state.fs+'px');
+  root.style.setProperty('--bg', state.bg==='white' ? 'var(--surface)' : '#f4f4f6');
+  // 主按钮位置
+  const tb = $('topbar');
+  if(state.pos==='center') tb.style.gridTemplateColumns='1fr auto 1fr';
+  if(state.pos==='left'){ tb.style.gridTemplateColumns='auto 1fr auto'; tb.insertBefore($('topbar').querySelector('.primary'), tb.firstChild); }
+  if(state.pos==='right'){ tb.style.gridTemplateColumns='1fr auto auto'; tb.appendChild(tb.querySelector('.primary')); }
+  // 次级按钮样式
+  document.querySelectorAll('.ghost').forEach(g=>{
+    g.classList.remove('soft','outline'); g.classList.add(state.ghost);
+  });
+  // 文档标识
+  $('docId').style.display = state.doc ? 'flex' : 'none';
+  // 分隔线
+  $('divEl').style.display = state.div ? 'block' : 'none';
+}
+
+// 绑定滑块
+$('cAccent').oninput = e => { state.accent=e.target.value; apply(); };
+$('cRadius').oninput = e => { state.radius=+e.target.value; $('vRadius').textContent=state.radius+'px'; apply(); };
+$('cGap').oninput = e => { state.gap=+e.target.value; $('vGap').textContent=state.gap; apply(); };
+$('cPad').oninput = e => { state.pad=+e.target.value; $('vPad').textContent=state.pad; apply(); };
+$('cFs').oninput = e => { state.fs=+e.target.value; $('vFs').textContent=state.fs+'px'; apply(); };
+
+// 分段选择
+function seg(id, key){
+  $(id).querySelectorAll('button').forEach(b=>{
+    b.onclick = () => {
+      $(id).querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); state[key]=b.dataset.v; apply();
+    };
+  });
+}
+seg('segPos','pos'); seg('segBg','bg'); seg('segGhost','ghost');
+
+// 开关
+function sw(id, key){
+  $(id).onclick = () => { $(id).classList.toggle('on'); state[key]=$(id).classList.contains('on'); apply(); };
+}
+sw('swDoc','doc'); sw('swDiv','div');
+
+// 导出
+$('btnExport').onclick = () => {
+  const css = `:root{--accent:${state.accent};--radius:${state.radius}px;--gap:${state.gap}px;--pad:${state.pad}px;--fs:${state.fs}px}
+.topbar{background:${state.bg==='white'?'#fff':'#f4f4f6'};border:1px solid #ececef;border-radius:var(--radius);padding:var(--pad) calc(var(--pad) + 4px);display:grid;grid-template-columns:${state.pos==='center'?'1fr auto 1fr':state.pos==='left'?'auto 1fr auto':'1fr auto auto'};align-items:center;gap:var(--gap)}
+.doc-id{display:${state.doc?'flex':'none'};align-items:center;gap:12px}
+.doc-id .name{font-size:var(--fs);font-weight:600}
+.primary{justify-self:${state.pos};background:var(--accent);color:#fff;font-size:var(--fs);font-weight:600;padding:calc(var(--pad) - 3px) 22px;border:none;border-radius:999px;cursor:pointer}
+.actions{justify-self:end;display:flex;align-items:center;gap:6px}
+.ghost{display:inline-flex;align-items:center;gap:6px;font-size:calc(var(--fs) - 1px);font-weight:500;padding:8px 12px;border-radius:10px;cursor:pointer;${state.ghost==='outline'?'border:1px solid #ececef;background:#fff;color:#6b6b73':'border:none;background:transparent;color:#6b6b73'}}
+.divider{display:${state.div?'block':'none'};width:1px;height:22px;background:#ececef}`;
+  const html = `<header class="topbar">
+${state.doc?`  <div class="doc-id"><div class="glyph">📄</div><div class="meta"><div class="name">注意力机制综述.pdf</div><div class="sub">23 个分块 · 已入库</div></div></div>\n`:''}  <button class="primary">▶ 开始精读</button>
+  <div class="actions">
+    <button class="ghost">上传文档</button>
+    <button class="ghost"><span class="dot"></span>我的记忆</button>
+${state.div?`    <span class="divider"></span>\n`:''}    <button class="ghost">⚙ 设置</button>
+  </div>
+</header>`;
+  $('out').value = `<!-- VibeReader 顶部面板 · 导出 ${new Date().toISOString().slice(0,10)} -->\n<style>\n${css}\n</style>\n${html}\n<!-- 激活 tab 样式: .tab.active{background:${state.accent}1a;color:${state.accent};font-weight:600} -->`;
+  $('modal').classList.add('show');
+};
+$('btnClose').onclick = () => $('modal').classList.remove('show');
+$('btnCopy').onclick = () => { navigator.clipboard.writeText($('out').value); $('btnCopy').textContent='已复制'; setTimeout(()=>$('btnCopy').textContent='复制',1200); };
+
+apply();
+</script>
+</body>
+</html>

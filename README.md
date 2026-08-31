@@ -2,7 +2,7 @@
 
 这是 VibeReader 与 UniRAG 的统一项目管理入口，使用 yishuship 管理产品生命周期。
 
-这个目录现在是 VibeReader 知识飞轮的本地统一入口。Reader、UniRAG、Vibero 参考仓库已经收束到这个目录下；旧路径保留 symlink，短期内旧命令仍可用。
+这个目录现在是 VibeReader 知识飞轮的本地统一入口。只保留自己的 Reader 和 UniRAG。作者 Vibero 的本机拷贝已于 2026-08-13 删除，不再作为参考仓。
 
 1. 统一产品叙事：以阅读为入口，以本地 RAG 为长期知识记忆。
 2. 统一开发计划：把 Reader、RAG、共享协议、模型配置、测试验收放到同一张路线图里。
@@ -12,13 +12,8 @@
 
 - Reader: `apps/reader`
 - UniRAG: `services/uni-rag`
-- Vibero legacy/reference: `legacy/vibero`
 
-兼容旧路径：
-
-- `/Users/mahaoxuan/Desktop/黑客松/阅读器/ai-chat-standalone` -> `apps/reader`
-- `/Users/mahaoxuan/Desktop/AI产品经理/uni-rag` -> `services/uni-rag`
-- `/Users/mahaoxuan/Desktop/黑客松/阅读器/Vibero` -> `legacy/vibero`
+不要再找 `legacy/vibero`、`黑客松/_apps`、`黑客松/_downloads`。那些是作者 Vibero 的本机残留，已经删除。
 
 详细索引见 [PROJECTS.md](PROJECTS.md)。
 

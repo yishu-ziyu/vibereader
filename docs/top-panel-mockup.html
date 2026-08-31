@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VibeReader 顶部面板原型（清晰度参考版）</title>
+<style>
+  :root{
+    /* 中性色阶 —— 唯一强调色 */
+    --bg:#f7f7f8;
+    --surface:#ffffff;
+    --line:#ececef;
+    --text:#1c1c1e;
+    --text-2:#6b6b73;
+    --text-3:#9a9aa2;
+    --accent:#2f6df6;        /* 唯一强调色 */
+    --accent-weak:#eaf1ff;
+    --radius:14px;
+    --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    padding:48px 24px;
+  }
+  .stage{max-width:1080px;margin:0 auto}
+
+  /* ===== 顶部面板：三段式，间距分组，唯一焦点 ===== */
+  .topbar{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 18px;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:20px;
+  }
+
+  /* 左：文档标识 —— 弱存在，不抢戏 */
+  .doc-id{display:flex;align-items:center;gap:12px;min-width:0}
+  .doc-id .glyph{
+    width:34px;height:34px;border-radius:10px;
+    background:var(--accent-weak);color:var(--accent);
+    display:grid;place-items:center;font-size:16px;flex:none;
+  }
+  .doc-id .meta{min-width:0}
+  .doc-id .name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-id .sub{font-size:12px;color:var(--text-3);margin-top:2px}
+
+  /* 中：唯一主行动 */
+  .primary{
+    justify-self:center;
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;
+    font-size:14px;font-weight:600;
+    padding:11px 22px;border:none;border-radius:999px;
+    cursor:pointer;transition:transform .08s ease,filter .15s ease;
+    box-shadow:0 1px 2px rgba(47,109,246,.25);
+  }
+  .primary:hover{filter:brightness(1.05)}
+  .primary:active{transform:translateY(1px)}
+
+  /* 右：次级操作 —— 间距分组，不描边，弱化 */
+  .actions{justify-self:end;display:flex;align-items:center;gap:6px}
+  .ghost{
+    display:inline-flex;align-items:center;gap:6px;
+    background:transparent;color:var(--text-2);
+    font-size:13px;font-weight:500;
+    padding:8px 12px;border:none;border-radius:var(--radius-sm);
+    cursor:pointer;transition:background .12s ease,color .12s ease;
+  }
+  .ghost:hover{background:#f0f0f2;color:var(--text)}
+  .ghost .dot{width:7px;height:7px;border-radius:50%;background:#3ec78a;flex:none}
+
+  .divider{width:1px;height:22px;background:var(--line);margin:0 4px}
+
+  /* ===== 下方内容占位，仅示意层级 ===== */
+  .tabs{
+    margin-top:16px;display:flex;gap:4px;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:6px;
+  }
+  .tab{
+    flex:1;text-align:center;font-size:13px;font-weight:500;color:var(--text-2);
+    padding:9px 0;border-radius:var(--radius-sm);cursor:pointer;
+  }
+  .tab.active{background:var(--accent-weak);color:var(--accent);font-weight:600}
+  .canvas{
+    margin-top:16px;height:320px;border-radius:var(--radius);
+    border:1px dashed var(--line);background:var(--surface);
+    display:grid;place-items:center;color:var(--text-3);font-size:13px;
+  }
+  .note{margin-top:18px;font-size:12px;color:var(--text-3);line-height:1.7;max-width:720px}
+  .note b{color:var(--text-2);font-weight:600}
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- 顶部面板：唯一焦点 = 开始精读 -->
+    <header class="topbar">
+      <div class="doc-id">
+        <div class="glyph">📄</div>
+        <div class="meta">
+          <div class="name">注意力机制综述.pdf</div>
+          <div class="sub">23 个分块 · 已入库</div>
+        </div>
+      </div>
+
+      <button class="primary">▶ 开始精读</button>
+
+      <div class="actions">
+        <button class="ghost">上传文档</button>
+        <button class="ghost"><span class="dot"></span>我的记忆</button>
+        <span class="divider"></span>
+        <button class="ghost">⚙ 设置</button>
+      </div>
+    </header>
+
+    <!-- 次级导航：与主行动分离，层级清楚 -->
+    <nav class="tabs">
+      <div class="tab active">阅读路线</div>
+      <div class="tab">卡片</div>
+      <div class="tab">笔记</div>
+      <div class="tab">对话</div>
+    </nav>
+
+    <div class="canvas">阅读内容区（示意）</div>
+
+    <p class="note">
+      这版只改了<b>顶部面板的信息层级</b>，没动你的 React 代码。<br/>
+      改的三件事：① 主行动「开始精读」单独居中、唯一醒目的圆角按钮；② 文档标识移到左侧弱存在，不再和按钮抢视线；
+      ③ 上传/记忆/设置用<b>间距分组</b>而非描边线，且全部弱化灰，不抢强调色。<br/>
+      强调色全程只用一种（蓝）。你打开看一眼，决定要不要我把它移植进 apps/reader 的真实组件。
+    </p>
+
+  </div>
+</body>
+</html>

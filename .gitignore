@@ -1,7 +1,7 @@
 # Nested repositories are tracked and pushed independently during Phase C.0.
 /apps/reader/
 /services/uni-rag/
-/legacy/vibero/
+/apps/vibereader-macos/
 
 # Runtime and local noise
 .DS_Store
@@ -16,3 +16,4 @@ build/
 !/docs/
 !/.ship/
 !/scripts/
+test-results/
