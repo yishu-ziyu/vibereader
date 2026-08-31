@@ -130,3 +130,32 @@
 2. **本阶段顺手修（低风险高回报）**：D10 删死代码、D9 提示词单一来源、D7 结构化成功判定、D4 link 入 SQLite。
 3. **进入 Phase C.1 monorepo cutover 前必须解决**：D1 重写 ARCHITECTURE.md、D2 契约查找机制（cutover 后 D2 自然消失）。
 4. **单独立项**：D5 key 管理、D12 双写一致性+删除端点、D3 存储网关收敛。
+
+## 4. 重构落地状态（2026-08-31 技术栈重构后）
+
+全部 18 项债务处置完毕，另完成两项产品级能力升级：
+
+| 债务 | 处置 | 落点 |
+| --- | --- | --- |
+| D1 | ✅ 已修复 | ARCHITECTURE.md 重写 |
+| D2 | ✅ 消除 | monorepo cutover（DEC-0005 squash import，契约同仓）+ VIBEREADER_CONTRACTS_DIR |
+| D3 | ✅ 消除 | 产品决策桌面 only，浏览器回退分支全部删除（R2） |
+| D4 | ✅ 已修复 | 入库链接入 SQLite |
+| D5 | ✅ 已修复 | API key 迁入 macOS Keychain，localStorage 只存空占位（R3） |
+| D6 | 🔄 缓解 | 适配器实例仍散落，但 health/降级链路稳定，留待 agent 层重构 |
+| D7 | ✅ 已修复 | 结构化 toolOutcome |
+| D8 | ✅ 已修复 | PDF 文本持久化 + 文本模式恢复（P0） |
+| D9 | ✅ 已修复 | 提示词单一来源 |
+| D10 | ✅ 已修复 | 死代码删除 |
+| D11 | ✅ 已修复 | job 落库 data/jobs.db，重启标记 failed，终态 24h 清理（R6） |
+| D12 | ✅ 已修复 | 删除端点 + per-source 幂等 + foreign_keys=ON + BM25 锁（R4），顺手修复 BM25 全量冲掉旧索引的既有 bug |
+| D13 | ✅ 已修复 | Docker env 修正 + 启动日志 |
+| D14 | ✅ 已修复 | parsed sidecar |
+| D15 | ✅ 已修复 | 三级检索 vector(≥0.30)→LIKE→recent + backfill-memory CLI（R5） |
+| D16 | 🔄 未处理 | 会话 citations 落库，留待下一轮 |
+| D17 | 🔄 大幅缓解 | run.py/容器绑定 loopback（社区 PR #3）+ Docker 配置修正；鉴权仍未做 |
+| D18 | 🔄 未处理 | KB pipeline 缓存，留待下一轮 |
+
+新增能力：PDF 文本持久化 + 阅读位置记忆（DEC-0008 P0）、VibeReader for Mac 原生版底座（DEC-0009）、monorepo 单仓（DEC-0005）。
+
+遗留（下一轮候选）：D6/D16/D18、Mac 版 M1（改品牌+摘除 Sparkle）、Mac 版 AI 融合 M2-M4。

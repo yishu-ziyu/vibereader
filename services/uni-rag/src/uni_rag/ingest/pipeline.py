@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import logging
+import shutil
 from pathlib import Path
 from collections.abc import Callable
 from uni_rag.ingest.parsers import parse_document
@@ -17,6 +18,23 @@ from uni_rag.config import load_settings
 
 
 logger = logging.getLogger(__name__)
+
+
+def cleanup_kb_files(kb_id: str) -> bool:
+    """删除 KB 的落盘索引目录 data/kbs/<kb_id>/（chroma/bm25/uploads 等全部内容）。
+
+    KB 级删除的级联清理：KBStore.delete 只管 SQLite 行，文件足迹由本函数
+    负责（文件操作放 pipeline 层，store 层保持纯 SQLite 职责）。
+    legacy 'default' KB 复用全局 data/ 目录，不允许按此路径清理。
+    返回是否实际删除了目录。
+    """
+    if not kb_id or kb_id == "default":
+        return False
+    kb_base = load_settings().data_dir / "kbs" / kb_id
+    if kb_base.exists():
+        shutil.rmtree(kb_base, ignore_errors=True)
+        return True
+    return False
 
 
 def _safe_upload_name(name: str) -> str:
@@ -37,7 +55,9 @@ class IngestPipeline:
         if kb_id is None:
             # Legacy: v0.2 兼容模式
             self.vector = VectorStore()
-            self.bm25 = BM25Index(load_settings().bm25_dir)
+            # 从盘加载既有 BM25 条目：之前用空索引全量重写 docs.json，
+            # 每次入库都会把旧文档的 BM25 条目冲掉（审计债 D12）。
+            self.bm25 = BM25Index.load(load_settings().bm25_dir)
             self.uploads_dir = load_settings().uploads_dir
         else:
             # Per-KB mode
@@ -50,7 +70,7 @@ class IngestPipeline:
             bm25_dir.mkdir(parents=True, exist_ok=True)
             uploads_dir.mkdir(parents=True, exist_ok=True)
             self.vector = VectorStore(data_dir=chroma_dir, collection_name=f"kb_{kb_id}")
-            self.bm25 = BM25Index(bm25_dir)
+            self.bm25 = BM25Index.load(bm25_dir)
             self.uploads_dir = uploads_dir
 
         # Visual RAG store: separate collection for image embeddings
@@ -89,6 +109,96 @@ class IngestPipeline:
         except OSError as e:
             logger.warning("保存解析文本 sidecar 失败 %s: %s", source_id, e)
 
+    def _purge_source(self, source_id: str) -> dict:
+        """删除某来源的全部旧索引（Chroma 文本+视觉向量、BM25 条目）。
+
+        幂等重入的关键：同 source_id 再次入库前先清旧索引，重复入库
+        不会产生重复 chunk；BM25 删除后立即落盘，避免异常路径下旧条目
+        残留在 docs.json。视觉通道是可选组件（部分测试用 partial 实例），
+        属性缺失时跳过。
+        """
+        text_deleted = self.vector.delete_source(source_id)
+        visual_vector = getattr(self, "visual_vector", None)
+        visual_deleted = visual_vector.delete_source(source_id) if visual_vector else 0
+        bm25_removed = self.bm25.remove_source(source_id)
+        if bm25_removed:
+            self.bm25.save()
+        return {
+            "chunks_deleted": text_deleted,
+            "visual_deleted": visual_deleted,
+            "bm25_removed": bm25_removed,
+        }
+
+    def delete_source(self, source_id: str) -> dict:
+        """彻底删除一个来源：向量、BM25、sidecar、上传原文件、视觉 tiles。
+
+        返回删除统计（chunks 数等）。若该来源在索引和磁盘上均无痕迹，
+        抛出 KeyError（路由层转 404）。
+        """
+        # 先从 Chroma 元数据反查该来源的上传文件名（新数据走 source_id 过滤，
+        # 旧数据只有 "<source_id>:<offset>" 形式的 id，按前缀兜底）。
+        # 必须在 purge 之前做：purge 会把这些向量连同元数据一起删掉。
+        save_names: list[str] = []
+        try:
+            prefix = f"{source_id}:"
+            rows = self.vector.collection.get(include=["metadatas"])
+            ids = rows.get("ids") or []
+            metadatas = rows.get("metadatas") or []
+            for cid, meta in zip(ids, metadatas):
+                if not (str(cid).startswith(prefix) or (meta and meta.get("source_id") == source_id)):
+                    continue
+                name = str((meta or {}).get("source", ""))
+                if name and name not in save_names:
+                    save_names.append(name)
+        except Exception as e:
+            logger.warning("反查 source %s 的文件名失败: %s", source_id, e)
+
+        stats = self._purge_source(source_id)
+
+        files_deleted: list[str] = []
+        for name in save_names:
+            # 只删除 uploads 下的同名文件；URL 来源的 source 是标题/链接，
+            # 含路径分隔符或与 uploads 文件名不一致时跳过
+            if Path(name).name != name:
+                continue
+            candidate = self.uploads_dir / name
+            if candidate.exists():
+                try:
+                    candidate.unlink()
+                    files_deleted.append(name)
+                except OSError as e:
+                    logger.warning("删除上传文件失败 %s: %s", candidate, e)
+
+        # 解析全文 sidecar
+        sidecar_deleted = False
+        sidecar = load_settings().parsed_dir / f"{source_id}.md"
+        if sidecar.exists():
+            try:
+                sidecar.unlink()
+                sidecar_deleted = True
+            except OSError as e:
+                logger.warning("删除 sidecar 失败 %s: %s", sidecar, e)
+
+        # 视觉 tiles 目录（逐文档存放于 visual_tiles/<source_id>/）
+        tiles_dir = getattr(self, "visual_tiles_dir", None)
+        tiles_deleted = False
+        if tiles_dir is not None:
+            tiles_dir = tiles_dir / source_id
+            if tiles_dir.exists():
+                shutil.rmtree(tiles_dir, ignore_errors=True)
+                tiles_deleted = True
+
+        stats.update({
+            "files_deleted": files_deleted,
+            "sidecar_deleted": sidecar_deleted,
+            "visual_tiles_dir_deleted": tiles_deleted,
+        })
+        if (stats["chunks_deleted"] == 0 and stats["visual_deleted"] == 0
+                and stats["bm25_removed"] == 0 and not files_deleted
+                and not sidecar_deleted and not tiles_deleted):
+            raise KeyError(f"source not found: {source_id}")
+        return stats
+
     def ingest_file(
         self,
         path: Path,
@@ -112,6 +222,8 @@ class IngestPipeline:
         doc = parse_document(dest, visual_tiles_dir=visual_tiles_subdir)
         source_id = self._source_id(dest)
         self._save_parsed_sidecar(source_id, doc.text)
+        # 幂等重入：同 source_id 重复入库前先清旧索引，避免 chunk 翻倍
+        self._purge_source(source_id)
 
         emit("chunking", 40, "正在按章节和段落切分")
         chunks = chunk_document(doc.text, source_id=source_id, pages=getattr(doc, 'pages', None))
@@ -206,6 +318,8 @@ class IngestPipeline:
         doc = parse_url_result(extraction)
         source_id = self._source_id_from_url(url, doc.text)
         self._save_parsed_sidecar(source_id, doc.text)
+        # 幂等重入：同 source_id 重复入库前先清旧索引，避免 chunk 翻倍
+        self._purge_source(source_id)
 
         emit("chunking", 40, "正在按章节和段落切分")
         chunks = chunk_document(doc.text, source_id=source_id, pages=getattr(doc, 'pages', None))

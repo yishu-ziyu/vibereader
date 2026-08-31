@@ -52,8 +52,8 @@ def client(tmp_path, monkeypatch):
     """Isolated FastAPI TestClient with a tmp data dir.
 
     We must wipe both config and routes singletons because FastAPI holds
-    them at module level. _memory_store and _memory_jobs are added so
-    memory state never leaks between tests.
+    them at module level. _memory_store is wiped so memory state never
+    leaks between tests（R6 起 job 状态按 settings 现取现用，无需重置）.
     """
     monkeypatch.setenv("UNI_RAG_DATA_DIR_PATH", str(tmp_path))
     monkeypatch.setenv("UNI_RAG_LLM_API_KEY", "test-key")
@@ -63,7 +63,6 @@ def client(tmp_path, monkeypatch):
     config_module._settings = None
     routes_module._pipeline = None
     routes_module._memory_store = None
-    routes_module._memory_jobs.clear()
 
     app = create_app()
     return TestClient(app)

@@ -74,3 +74,25 @@ def test_kbstore_session_binding_empty(store):
 def test_kbstore_session_binding_rejects_unknown_kb(store):
     with pytest.raises(ValueError, match="not found"):
         store.bind_session("sess-3", ["nonexistent"])
+
+
+def test_kbstore_delete_cascades_session_bindings(store):
+    """R4（audit D12）：foreign_keys=ON 后，删 KB 必须级联清掉 session_kbs，
+    不留孤儿绑定行。sqlite3 默认 foreign_keys=OFF 时该测试会失败。"""
+    import sqlite3
+    store.create("CS101", "x")
+    store.bind_session("sess-1", ["cs101"])
+    assert store.delete("cs101") is True
+    with sqlite3.connect(store.db_path) as conn:
+        orphans = conn.execute(
+            "SELECT COUNT(*) FROM session_kbs WHERE kb_id = 'cs101'"
+        ).fetchone()[0]
+    assert orphans == 0
+    assert store.get_session_kbs("sess-1") == []
+
+
+def test_sqlite_connect_enables_foreign_keys(tmp_path):
+    """统一连接 helper 必须在每个连接上开启 PRAGMA foreign_keys。"""
+    from uni_rag.store.sqlite_utils import connect
+    with connect(tmp_path / "t.db") as conn:
+        assert conn.execute("PRAGMA foreign_keys").fetchone()[0] == 1

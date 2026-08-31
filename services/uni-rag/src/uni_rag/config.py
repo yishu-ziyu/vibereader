@@ -107,6 +107,13 @@ class Settings(BaseSettings):
         return self.data_dir / "memory.db"
 
     @property
+    def jobs_db_path(self) -> Path:
+        # R6：job 状态落库（审计债 D11）。沿用 sessions/kbs/memory
+        # 每库一文件的既有风格：job 更新频率高（工作线程轮写进度），
+        # 独立文件避免与 KB CRUD / 会话读写争锁。
+        return self.data_dir / "jobs.db"
+
+    @property
     def kb_dir(self) -> Path:
         """Base dir for per-KB subdirectories (chroma/, bm25/, uploads/)."""
         p = self.data_dir / "kbs"

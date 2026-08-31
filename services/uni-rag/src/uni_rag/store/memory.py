@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-import sqlite3
 import uuid
 from pathlib import Path
 
@@ -22,6 +21,7 @@ import numpy as np
 
 from uni_rag.config import load_settings
 from uni_rag.ingest.embedder import get_embedder
+from uni_rag.store.sqlite_utils import connect
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class MemoryStore:
         self._init_db()
 
     def _init_db(self) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS saved_memories (
                     memory_id TEXT PRIMARY KEY,
@@ -189,7 +189,7 @@ class MemoryStore:
         source_refs_json = json.dumps(source_refs or [], ensure_ascii=False)
         # R5：向量在 store 层生成（不放 routes），失败降级为 NULL
         embedding_blob, embedding_model = self._try_embed(text)
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute(
                 """
                 INSERT INTO saved_memories (
@@ -209,7 +209,7 @@ class MemoryStore:
 
     def get(self, memory_id: str) -> dict | None:
         """Return one memory by id, or None if not found."""
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT memory_id, artifact_id, artifact_type, title, text, "
                 "document_id, document_name, source_refs_json, "
@@ -223,7 +223,7 @@ class MemoryStore:
         """Return the most recent `top_k` memories (by created_at DESC)."""
         if top_k <= 0:
             return []
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 "SELECT memory_id, artifact_id, artifact_type, title, text, "
                 "document_id, document_name, source_refs_json, "
@@ -343,7 +343,7 @@ class MemoryStore:
         时跳过整个向量通道。返回按相似度降序的完整记忆 dict（不含 retrieved_by，
         由 search 统一标注）。
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 "SELECT memory_id, artifact_id, artifact_type, title, text, "
                 "document_id, document_name, source_refs_json, "
@@ -401,7 +401,7 @@ class MemoryStore:
 
         matched_ids: list[str] = []
         seen: set[str] = set()
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             for tok in tokens:
                 like = f"%{tok}%"
                 rows = conn.execute(
@@ -422,7 +422,7 @@ class MemoryStore:
         # Fetch full rows for matched_ids, preserving matched order, limit top_k.
         matched_ids = matched_ids[:top_k]
         placeholders = ",".join("?" for _ in matched_ids)
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 f"SELECT memory_id, artifact_id, artifact_type, title, text, "
                 f"document_id, document_name, source_refs_json, "
@@ -442,7 +442,7 @@ class MemoryStore:
         与写入/检索路径不同，embedder 不可用（None/异常）时抛 RuntimeError——
         这是显式运维动作，失败应当可见，已成功批次保留、可重跑续传。
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 "SELECT memory_id, text FROM saved_memories "
                 "WHERE embedding IS NULL"
@@ -458,7 +458,7 @@ class MemoryStore:
         for i in range(0, len(rows), max(batch_size, 1)):
             batch = rows[i:i + batch_size]
             vecs = embedder.embed([r[1] for r in batch])
-            with sqlite3.connect(self.db_path) as conn:
+            with connect(self.db_path) as conn:
                 for (memory_id, _), vec in zip(batch, vecs):
                     conn.execute(
                         "UPDATE saved_memories "
@@ -474,7 +474,7 @@ class MemoryStore:
         return updated
 
     def count(self) -> int:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT COUNT(*) FROM saved_memories"
             ).fetchone()

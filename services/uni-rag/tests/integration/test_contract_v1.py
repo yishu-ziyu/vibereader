@@ -93,7 +93,8 @@ def client(tmp_path, monkeypatch):
     """隔离的 FastAPI TestClient，使用临时数据目录。
 
     必须同时清空 config 与 routes 模块级单例（FastAPI 在模块级持有它们）。
-    额外重置 _memory_store 和 _memory_jobs，确保记忆状态不在测试间泄漏。
+    额外重置 _memory_store，确保记忆状态不在测试间泄漏
+    （R6 起 job 状态按 settings 现取现用，无需重置）。
     """
     monkeypatch.setenv("UNI_RAG_DATA_DIR_PATH", str(tmp_path))
     monkeypatch.setenv("UNI_RAG_LLM_API_KEY", "test-key")
@@ -103,7 +104,6 @@ def client(tmp_path, monkeypatch):
     config_module._settings = None
     routes_module._pipeline = None
     routes_module._memory_store = None
-    routes_module._memory_jobs.clear()
 
     app = create_app()
     return TestClient(app)

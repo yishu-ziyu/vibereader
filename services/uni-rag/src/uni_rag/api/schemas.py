@@ -148,6 +148,17 @@ class DeleteResponse(BaseModel):
     deleted: bool
 
 
+class DocumentDeleteResponse(BaseModel):
+    """DELETE /api/documents/{source_id}（含 KB 版本）的删除统计。"""
+    source_id: str
+    deleted: bool = True
+    chunks_deleted: int = 0
+    visual_deleted: int = 0
+    bm25_removed: int = 0
+    files_deleted: list[str] = []
+    sidecar_deleted: bool = False
+
+
 class ProviderInfo(BaseModel):
     id: str
     name: str

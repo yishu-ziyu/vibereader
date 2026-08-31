@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from typing import TypedDict
 
+from uni_rag.store.sqlite_utils import connect
+
 
 class KbRecord(TypedDict):
     id: str
@@ -55,7 +57,7 @@ class KBStore:
         self._init_db()
 
     def _init_db(self) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_bases (
                     id TEXT PRIMARY KEY,
@@ -85,7 +87,7 @@ class KBStore:
             kb_id = _slugify(name)
         _validate_id(kb_id)
         now = _now()
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             try:
                 conn.execute(
                     "INSERT INTO knowledge_bases (id, name, description, created_at) "
@@ -97,7 +99,7 @@ class KBStore:
         return KbRecord(id=kb_id, name=name, description=description, created_at=now)
 
     def get(self, kb_id: str) -> KbRecord | None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT id, name, description, created_at FROM knowledge_bases WHERE id = ?",
                 (kb_id,),
@@ -107,7 +109,7 @@ class KBStore:
         return KbRecord(id=row[0], name=row[1], description=row[2], created_at=row[3])
 
     def list(self) -> list[KbRecord]:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 "SELECT id, name, description, created_at FROM knowledge_bases ORDER BY created_at"
             ).fetchall()
@@ -116,7 +118,9 @@ class KBStore:
         ]
 
     def delete(self, kb_id: str) -> bool:
-        with sqlite3.connect(self.db_path) as conn:
+        # 连接开启了 foreign_keys=ON，session_kbs 的 ON DELETE CASCADE
+        # 才会真正生效（删除 KB 时连带清掉绑定关系，不留孤儿行）。
+        with connect(self.db_path) as conn:
             cur = conn.execute("DELETE FROM knowledge_bases WHERE id = ?", (kb_id,))
             return cur.rowcount > 0
 
@@ -135,7 +139,7 @@ class KBStore:
         for kid in kb_ids:
             if self.get(kid) is None:
                 raise ValueError(f"kb {kid!r} not found")
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute("DELETE FROM session_kbs WHERE session_id = ?", (session_id,))
             for kid in kb_ids:
                 conn.execute(
@@ -144,7 +148,7 @@ class KBStore:
                 )
 
     def get_session_kbs(self, session_id: str) -> list[KbRecord]:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 """
                 SELECT kb.id, kb.name, kb.description, kb.created_at

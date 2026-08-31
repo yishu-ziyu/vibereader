@@ -11,9 +11,11 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 from uni_rag.rag.pipeline import RAGPipeline
+from uni_rag.ingest.pipeline import IngestPipeline, cleanup_kb_files
 from uni_rag.session.store import SessionStore
 from uni_rag.store.vector import VectorStore
 from uni_rag.store.kb import KBStore
+from uni_rag.store.jobs import JobStore
 from uni_rag.config import load_settings
 from uni_rag.api.schemas import (
     QueryRequest, QueryResponse, IngestResponse,
@@ -26,6 +28,7 @@ from uni_rag.api.schemas import (
     ProvidersResponse, ProviderInfo,
     MemoryJobsRequest, MemoryJobStartResponse,
     MemoryJobStatusResponse, MemoryJobResult,
+    DocumentDeleteResponse,
 )
 from uni_rag.export.md_exporter import render_markdown
 from uni_rag.ingest.link_extractors import LinkExtractionError
@@ -33,18 +36,28 @@ from uni_rag.ingest.link_extractors import LinkExtractionError
 
 router = APIRouter(prefix="/api")
 _pipeline: RAGPipeline | None = None
-_ingest_jobs: dict[str, dict] = {}
-_ingest_jobs_lock = threading.Lock()
+
+
+# ── Job 状态落库（R6，审计债 D11）──
+# 旧实现用模块级字典 _ingest_jobs/_memory_jobs，重启即失、只写不删。
+# 现统一走 JobStore（data/jobs.db），Reader 轮询契约不变。
+def get_job_store() -> JobStore:
+    """按当前 settings 构造 JobStore（与 _kb_store() 等现有 helper 同风格）。
+
+    不做进程级缓存：SQLite 打开成本极低，而缓存单例会在测试/多数据目录
+    场景下指向过期的 tmp 路径。startup 维护（app.py）自行创建实例。
+    """
+    return JobStore(load_settings().jobs_db_path)
+
 
 # ── Memory backend (phase-1) ──
 # _memory_store is a process-wide MemoryStore singleton lazily created
-# from settings.memory_db_path. _memory_jobs tracks POST /api/memory/jobs
-# status so Reader can poll GET /api/memory/jobs/{job_id}. In practice
-# POST persists synchronously (Reader fast-paths on status=completed),
-# but we still register the job dict so the GET endpoint is consistent.
+# from settings.memory_db_path. Memory job status now persists via
+# JobStore (kind="memory") so Reader can poll GET /api/memory/jobs/{job_id}
+# across restarts. In practice POST persists synchronously (Reader
+# fast-paths on status=completed), but we still register the job record
+# so the GET endpoint is consistent.
 _memory_store = None
-_memory_jobs: dict[str, dict] = {}
-_memory_jobs_lock = threading.Lock()
 
 
 def get_memory_store():
@@ -68,15 +81,11 @@ def get_pipeline() -> RAGPipeline:
 
 
 def _set_ingest_job(key: str, **updates) -> None:
-    with _ingest_jobs_lock:
-        current = _ingest_jobs.get(key, {})
-        _ingest_jobs[key] = {**current, **updates}
+    get_job_store().update(key, "ingest", **updates)
 
 
 def _get_ingest_job(job_id: str) -> dict | None:
-    with _ingest_jobs_lock:
-        job = _ingest_jobs.get(job_id)
-        return dict(job) if job else None
+    return get_job_store().get(job_id)
 
 
 def _run_ingest_job(
@@ -284,15 +293,11 @@ def get_ingest_job(job_id: str):
 # GET /api/memory/jobs/{job_id} is still provided for compatibility
 # (e.g. if Reader ever switches to async ingestion).
 def _set_memory_job(job_id: str, **updates) -> None:
-    with _memory_jobs_lock:
-        current = _memory_jobs.get(job_id, {})
-        _memory_jobs[job_id] = {"job_id": job_id, **current, **updates}
+    get_job_store().update(job_id, "memory", **updates)
 
 
 def _get_memory_job(job_id: str) -> dict | None:
-    with _memory_jobs_lock:
-        job = _memory_jobs.get(job_id)
-        return dict(job) if job else None
+    return get_job_store().get(job_id)
 
 
 def _build_memory_text(payload) -> str:
@@ -730,7 +735,58 @@ def delete_kb(kb_id: str):
     deleted = _kb_store().delete(kb_id)
     if not deleted:
         raise HTTPException(404, f"KB not found: {kb_id}")
+    # 级联清理：连 KB 的落盘索引目录一起删（audit D12）。
+    # legacy 'default' KB 复用全局 data/ 目录，cleanup 内部会跳过。
+    cleanup_kb_files(kb_id)
     return DeleteResponse(deleted=True)
+
+
+# --- Document deletion (R4, audit D12: 索引只增不减) ---
+
+def _ingest_pipeline_for_kb(kb_id: str | None) -> IngestPipeline:
+    """Delete 路径只需要 IngestPipeline（不必构建检索器/LLM 客户端）。"""
+    if kb_id in (None, "default"):
+        return IngestPipeline(kb_id=None)
+    return IngestPipeline(kb_id=kb_id)
+
+
+def _delete_document(kb_id: str | None, source_id: str) -> DocumentDeleteResponse:
+    """按 source_id 彻底删除一个来源并返回删除统计。"""
+    if kb_id in (None, "default") and _pipeline is not None:
+        # default KB：复用单例 pipeline 的 ingest 实例，同步清掉它内存里
+        # 持有的 BM25 docs，避免删除后单例再次 save 时把旧条目写回去。
+        ingest = _pipeline.ingest
+    else:
+        # KB 级路径没有实例缓存（每次 _pipeline_for_kb 都新建），从盘新开即可
+        ingest = _ingest_pipeline_for_kb(kb_id)
+    try:
+        stats = ingest.delete_source(source_id)
+    except KeyError:
+        raise HTTPException(404, f"Source not found: {source_id}")
+    return DocumentDeleteResponse(
+        source_id=source_id,
+        deleted=True,
+        chunks_deleted=stats["chunks_deleted"],
+        visual_deleted=stats["visual_deleted"],
+        bm25_removed=stats["bm25_removed"],
+        files_deleted=stats["files_deleted"],
+        sidecar_deleted=stats["sidecar_deleted"],
+    )
+
+
+@router.delete("/documents/{source_id}", response_model=DocumentDeleteResponse)
+def delete_document(source_id: str):
+    """Delete a document from the default KB: Chroma vectors, BM25 entries,
+    parsed sidecar, the uploaded file, and visual tiles."""
+    return _delete_document(None, source_id)
+
+
+@router.delete("/kbs/{kb_id}/documents/{source_id}", response_model=DocumentDeleteResponse)
+def delete_kb_document(kb_id: str, source_id: str):
+    """Delete a document from a specific KB (same cleanup as the default-KB route)."""
+    if _kb_store().get(kb_id) is None:
+        raise HTTPException(404, f"KB not found: {kb_id}")
+    return _delete_document(kb_id, source_id)
 
 
 @router.post("/kbs/{kb_id}/ingest/jobs", response_model=IngestJobStartResponse)

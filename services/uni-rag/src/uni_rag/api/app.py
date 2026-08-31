@@ -10,6 +10,7 @@ from uni_rag.api.routes import router
 from uni_rag.config import load_settings
 from uni_rag.logging_setup import setup_logging
 from uni_rag.store.kb import KBStore
+from uni_rag.store.jobs import JobStore
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     KBStore(settings.kb_db_path).ensure_default()
+    # R6：job 表启动维护（audit D11）。
+    # 1) 重启后 queued/running 的工作线程已丢失，一次性标记为 failed，
+    #    让 Reader 轮询立即得到明确终态；
+    # 2) 清理超过 24h 的终态 job（completed/failed），防止表无限增长。
+    jobs = JobStore(settings.jobs_db_path)
+    recovered = jobs.recover_interrupted()
+    cleaned = jobs.cleanup_terminal(max_age_hours=24)
+    if recovered or cleaned:
+        logger.info("job 表启动维护：中断任务标记 failed=%d，过期终态清理=%d", recovered, cleaned)
     app.include_router(router)
 
     # 静态前端

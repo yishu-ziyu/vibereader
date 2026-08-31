@@ -1,8 +1,9 @@
 """SQLite-backed session store."""
 from __future__ import annotations
-import sqlite3
 import uuid
 from pathlib import Path
+
+from uni_rag.store.sqlite_utils import connect
 
 
 class SessionStore:
@@ -12,7 +13,7 @@ class SessionStore:
         self._init_db()
 
     def _init_db(self) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
                     session_id TEXT NOT NULL,
@@ -27,14 +28,14 @@ class SessionStore:
         return uuid.uuid4().hex
 
     def append(self, session_id: str, role: str, content: str) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute(
                 "INSERT INTO messages (session_id, seq, role, content) VALUES (?, ?, ?, ?)",
                 (session_id, self._next_seq(session_id), role, content),
             )
 
     def _next_seq(self, session_id: str) -> int:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT COALESCE(MAX(seq), -1) + 1 FROM messages WHERE session_id = ?",
                 (session_id,),
@@ -42,7 +43,7 @@ class SessionStore:
             return row[0]
 
     def get(self, session_id: str) -> list[dict]:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 "SELECT role, content FROM messages WHERE session_id = ? ORDER BY seq",
                 (session_id,),
@@ -50,7 +51,7 @@ class SessionStore:
         return [{"role": r[0], "content": r[1]} for r in rows]
 
     def clear(self, session_id: str) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
 
     def get_recent(self, session_id: str, limit: int) -> list[dict]:
@@ -62,7 +63,7 @@ class SessionStore:
         """
         if limit <= 0:
             return []
-        with sqlite3.connect(self.db_path) as conn:
+        with connect(self.db_path) as conn:
             rows = conn.execute(
                 """
                 SELECT role, content FROM (
