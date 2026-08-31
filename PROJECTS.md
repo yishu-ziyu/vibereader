@@ -33,15 +33,14 @@ Author Vibero local copies were deleted on 2026-08-13 (`legacy/vibero`, `黑客�
 
 ## Compatibility Symlinks
 
-The old paths are retained as symlinks so existing scripts, shells, and muscle memory do not break immediately:
+The old Reader path is retained as a symlink so existing scripts, shells, and muscle memory do not break immediately:
 
 ```text
 /Users/mahaoxuan/Desktop/黑客松/阅读器/ai-chat-standalone
   -> /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench/apps/reader
-
-/Users/mahaoxuan/Desktop/AI产品经理/uni-rag
-  -> /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench/services/uni-rag
 ```
+
+`/Users/mahaoxuan/Desktop/AI产品经理/uni-rag` 已于 2026-08-31 恢复为**独立项目副本**（不再是软链）：从 `services/uni-rag` 复制最新代码 + 从 `~/vibereader-git-backups/unirag-git-20260831.tar.gz` 恢复 `.git` 历史，remote 仍指向 `uni-rag.git`。它是独立演进的实验项目，不属于 workbench 工程；workbench 的 canonical 代码仍是 `services/uni-rag`。
 
 Treat the new paths as canonical in new docs, prompts, scripts, and future commits.
 
