@@ -8,6 +8,7 @@ from rich.markdown import Markdown
 from rich.table import Table
 from uni_rag.rag.pipeline import RAGPipeline
 from uni_rag.store.kb import KBStore
+from uni_rag.store.memory import MemoryStore
 from uni_rag.config import load_settings
 from uni_rag.api.app import create_app
 import uvicorn
@@ -159,6 +160,28 @@ def ingest_url_kb(
         console.print(f"[red]提取失败: {e}[/red]")
         raise typer.Exit(1) from e
     _print_ingest_result(url, result, kb_label=kb_id)
+
+
+@app.command("backfill-memory")
+def backfill_memory(
+    batch_size: int = typer.Option(32, "--batch-size", "-b", help="每批嵌入条数"),
+):
+    """为缺少向量的历史记忆一次性补齐 BGE-M3 嵌入（R5 运维命令）。
+
+    只处理 embedding 为 NULL 的行；embedder 不可用时整批失败退出，
+    已成功批次保留，可重跑续传。
+    """
+    store = MemoryStore(load_settings().memory_db_path)
+    try:
+        updated = store.backfill_embeddings(batch_size=batch_size)
+    except Exception as e:
+        console.print(f"[red]补嵌入失败: {e}[/red]")
+        raise typer.Exit(1) from e
+    total = store.count()
+    console.print(
+        f"✓ 已为 {updated} 条记忆补齐向量嵌入（库内共 {total} 条，"
+        f"模型 BAAI/bge-m3，batch_size={batch_size}）"
+    )
 
 
 @app.command()

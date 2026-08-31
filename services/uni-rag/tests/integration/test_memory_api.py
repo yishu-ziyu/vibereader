@@ -21,6 +21,32 @@ from fastapi.testclient import TestClient
 from uni_rag.api.app import create_app
 
 
+class _FakeMemoryEmbedder:
+    """确定性桩 embedder：返回常数向量，避免真实加载/下载 BGE-M3。
+
+    R5 起 POST /api/memory/jobs 会在 MemoryStore.add 内生成向量；这里注入
+    轻量桩保证集成测试离线可跑，fast-path（同步 completed）语义不受影响。
+    常数向量使库内任意两条记忆 cosine=1.0，向量通道行为完全可预测。
+    """
+
+    dim = 4
+
+    def embed(self, texts):
+        return [[0.1, 0.2, 0.3, 0.4] for _ in texts]
+
+
+@pytest.fixture(autouse=True)
+def _fake_memory_embedder(monkeypatch):
+    """把 MemoryStore 的 get_embedder 替换为轻量桩（仅记忆通道）。
+
+    LLM 与检索器的 mock 维持各测试原有方式，不在此处干预。
+    """
+    import uni_rag.store.memory as memory_module
+    monkeypatch.setattr(
+        memory_module, "get_embedder", lambda: _FakeMemoryEmbedder()
+    )
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Isolated FastAPI TestClient with a tmp data dir.

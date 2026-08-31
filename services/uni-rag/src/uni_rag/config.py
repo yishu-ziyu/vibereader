@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     # Citation verification
     cite_similarity_threshold: float = 0.45
 
+    # R5 记忆语义检索：saved_memories 向量命中的 cosine 相似度阈值，
+    # 低于该值不进入向量结果，检索降级 LIKE / 最近记录兜底。
+    memory_similarity_threshold: float = 0.30
+
     # LlamaCloud (LlamaParse)
     llama_cloud_api_key: str | None = None
 
