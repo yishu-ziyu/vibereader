@@ -19,9 +19,15 @@ vi.mock('antd', async (importOriginal) => {
     };
 });
 
-// 注意：不 mock ./services/persistentStorage —— 其与 ./storage.js 存在循环引用，
-// 工厂替换会破坏 store → storage.js 的导入。这里使用真实模块的浏览器回退
-// （localStorage key vibereader.readingPositions）来验证保存/恢复。
+// R2 存储单轨化：persistentStorage 已删除浏览器回退（原依赖 localStorage key
+// vibereader.readingPositions）。这里直接 mock persistentStorage 的两个阅读位置
+// 函数（mock invoke 边界），验证 PdfViewer 的保存/恢复链路。
+const persistentMock = vi.hoisted(() => ({
+    loadPersistentReadingPosition: vi.fn(),
+    savePersistentReadingPosition: vi.fn(),
+}));
+
+vi.mock('./services/persistentStorage', () => persistentMock);
 
 vi.mock('pdfjs-dist', () => ({
     GlobalWorkerOptions: {
@@ -52,21 +58,13 @@ vi.mock('./services/ocrService', () => ({
     recognizeCurrentPdfPage: vi.fn().mockResolvedValue([]),
 }));
 
-const POSITIONS_KEY = 'vibereader.readingPositions';
-
-function readStoredPosition(documentId) {
-    try {
-        const map = JSON.parse(localStorage.getItem(POSITIONS_KEY) || '{}');
-        return map[documentId] || null;
-    } catch (_) {
-        return null;
-    }
-}
-
 describe('PdfViewer reading position memory', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        localStorage.clear();
+        persistentMock.loadPersistentReadingPosition.mockReset();
+        persistentMock.loadPersistentReadingPosition.mockResolvedValue(null);
+        persistentMock.savePersistentReadingPosition.mockReset();
+        persistentMock.savePersistentReadingPosition.mockResolvedValue(null);
         window.HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
             clearRect: vi.fn(),
             save: vi.fn(),
@@ -82,23 +80,28 @@ describe('PdfViewer reading position memory', () => {
     afterEach(() => {
         cleanup();
         usePdfStore.getState().clearPdf();
-        localStorage.clear();
     });
 
     it('restores the saved page and zoom after the PDF loads and notifies the reader', async () => {
-        localStorage.setItem(POSITIONS_KEY, JSON.stringify({
-            'pos-doc': { page: 2, scrollRatio: 0.5, zoom: 1.5, updatedAt: 100 },
-        }));
+        persistentMock.loadPersistentReadingPosition.mockResolvedValue({
+            variant: 'pdf',
+            page: 2,
+            scrollRatio: 0.5,
+            zoom: 1.5,
+            updatedAt: 100,
+        });
 
         render(<PdfViewer documentId="pos-doc" />);
 
         expect(await screen.findByText('150%', {}, { timeout: 10000 })).toBeTruthy();
         expect(screen.getByDisplayValue('2')).toBeTruthy();
         expect(antdMessage.success).toHaveBeenCalledWith('已恢复到上次阅读位置');
+        expect(persistentMock.loadPersistentReadingPosition).toHaveBeenCalledWith('pos-doc');
 
         // 恢复完成后写回的位置应是恢复后的页码/缩放（而不是初始值）
         await vi.waitFor(() => {
-            expect(readStoredPosition('pos-doc')).toEqual(
+            expect(persistentMock.savePersistentReadingPosition).toHaveBeenCalledWith(
+                'pos-doc',
                 expect.objectContaining({ page: 2, zoom: 1.5 }),
             );
         });
@@ -129,8 +132,9 @@ describe('PdfViewer reading position memory', () => {
         fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '2' } });
 
         await vi.waitFor(() => {
-            expect(readStoredPosition('pos-doc')).toEqual(
-                expect.objectContaining({ page: 2 }),
+            expect(persistentMock.savePersistentReadingPosition).toHaveBeenCalledWith(
+                'pos-doc',
+                expect.objectContaining({ page: 2, variant: 'pdf' }),
             );
         });
         expect(antdMessage.success).not.toHaveBeenCalled();

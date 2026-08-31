@@ -17,6 +17,7 @@ const mockSelection = vi.hoisted(() => ({
 const mockChatStream = vi.hoisted(() => vi.fn());
 
 vi.mock('./storage', () => ({
+    bootstrapModelApiKeys: vi.fn().mockResolvedValue(0),
     deleteConversation: vi.fn().mockResolvedValue(true),
     getFontScale: vi.fn(() => 1),
     getModelConfigs: vi.fn(() => []),

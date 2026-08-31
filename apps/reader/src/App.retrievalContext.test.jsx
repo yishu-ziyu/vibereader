@@ -68,6 +68,7 @@ const documentKnowledgeServiceMock = vi.hoisted(() => ({
 }));
 
 vi.mock('./storage', () => ({
+    bootstrapModelApiKeys: vi.fn().mockResolvedValue(0),
     deleteConversation: vi.fn().mockResolvedValue(true),
     getFontScale: vi.fn(() => 1),
     getModelConfigs: vi.fn(() => []),

@@ -7,9 +7,13 @@ import {
 
 export const KNOWLEDGE_INGEST_TASK_TYPE = 'knowledge_ingest';
 
-const DOCUMENT_KNOWLEDGE_LINKS_KEY = 'vibereader.documentKnowledgeLinks';
+// R2 存储单轨化：原 localStorage key vibereader.documentKnowledgeLinks 的
+// 浏览器缓存已删除。会话内的同步查询缓存改为模块内存态；跨会话真相源是
+// persistentStorage（Tauri → SQLite documents 表的两列）。
 const DEFAULT_POLL_INTERVAL_MS = 1500;
 const DEFAULT_MAX_POLLS = 240;
+
+let linkCache = [];
 
 function nowMs(value) {
     return typeof value === 'number' ? value : Date.now();
@@ -52,22 +56,11 @@ function contentHashForDocument(document = {}) {
 }
 
 function readLinks() {
-    if (typeof localStorage === 'undefined') return [];
-    try {
-        const parsed = JSON.parse(localStorage.getItem(DOCUMENT_KNOWLEDGE_LINKS_KEY) || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-        return [];
-    }
+    return linkCache;
 }
 
 function writeLinks(links = []) {
-    if (typeof localStorage === 'undefined') return;
-    try {
-        localStorage.setItem(DOCUMENT_KNOWLEDGE_LINKS_KEY, JSON.stringify(links));
-    } catch (_) {
-        // Local storage may be unavailable in constrained browser contexts.
-    }
+    linkCache = Array.isArray(links) ? links : [];
 }
 
 function knowledgeIngestTaskId(documentId) {
@@ -115,7 +108,7 @@ export function isDocumentKnowledgeQueryReady(documentId) {
     );
 }
 
-/** 同步缓存内的记录 upsert（保持原 localStorage key 与完整记录结构不变）。 */
+/** 同步缓存内的记录 upsert（会话内存态，记录结构保持不变）。 */
 function upsertLinkInCache(normalized) {
     const links = readLinks().filter((item) => item.readerDocumentId !== normalized.readerDocumentId);
     const next = [normalized, ...links].slice(0, 500);
@@ -124,9 +117,8 @@ function upsertLinkInCache(normalized) {
 
 /**
  * D4：入库链接持久化统一走 persistentStorage 包装
- * （Tauri → SQLite documents.unirag_source_id/knowledge_status 两列；
- * 浏览器 → wrapper 内的 localStorage 回退）。fire-and-forget：
- * 持久化失败不阻塞入库流程，仅记录告警。
+ * （Tauri → SQLite documents.unirag_source_id/knowledge_status 两列）。
+ * fire-and-forget：持久化失败不阻塞入库流程，仅记录告警。
  */
 function persistKnowledgeLinkToStore(normalized) {
     Promise.resolve(savePersistentDocumentKnowledge(normalized.readerDocumentId, {
@@ -147,7 +139,7 @@ export function saveDocumentKnowledgeLink(link = {}) {
 
 /**
  * D4：从持久层读取入库链接并覆盖同步缓存
- * （Tauri → SQLite；浏览器 → localStorage 回退）。
+ * （Tauri → SQLite；非 Tauri 运行时返回 null 且不动缓存）。
  * 用于打开文档/启动时对齐跨会话状态；异步且不抛错。
  *
  * @param {string} documentId

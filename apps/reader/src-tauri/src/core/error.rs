@@ -4,6 +4,8 @@ use std::fmt;
 pub enum StorageError {
     Database(String),
     Validation(String),
+    /// R3：macOS Keychain（keyring crate）操作失败
+    Keychain(String),
 }
 
 impl StorageError {
@@ -11,12 +13,15 @@ impl StorageError {
         match self {
             StorageError::Database(_) => "database_error",
             StorageError::Validation(_) => "validation_error",
+            StorageError::Keychain(_) => "keychain_error",
         }
     }
 
     pub fn message(&self) -> &str {
         match self {
-            StorageError::Database(message) | StorageError::Validation(message) => message,
+            StorageError::Database(message)
+            | StorageError::Validation(message)
+            | StorageError::Keychain(message) => message,
         }
     }
 }

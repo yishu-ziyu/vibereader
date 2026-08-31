@@ -1,36 +1,25 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import {
-    deleteConversation as browserDeleteConversation,
-    listConversations as browserListConversations,
-    loadConversation as browserLoadConversation,
-    saveConversation as browserSaveConversation,
-} from '../storage';
+// R2 存储单轨化：产品只做桌面客户端（Tauri），持久化唯一路径是
+// Tauri command → SQLite。浏览器形态（Vite dev server 仅用于调试）不再
+// 维护 localStorage/IndexedDB 回退；非 Tauri 运行时下所有持久化函数都是
+// 安全 no-op（返回 null/空数组），保证 dev server 下 UI 可启动不报错。
 
-const WEB_DOCUMENTS_KEY = 'vibereader.web.documents';
-const DOCUMENT_KNOWLEDGE_LINKS_KEY = 'vibereader.documentKnowledgeLinks';
 export const TASK_UPDATED_EVENT = 'vibereader:task-updated';
 
 export function isPersistentStorageAvailable() {
     return typeof window !== 'undefined' && Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__);
 }
 
-function readWebDocuments() {
-    try {
-        const raw = localStorage.getItem(WEB_DOCUMENTS_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-        return [];
-    }
-}
+// 模块级 flag：非 Tauri 运行时只告警一次，避免 dev server 下刷屏
+let hasWarnedUnavailable = false;
 
-function writeWebDocuments(documents) {
-    try {
-        localStorage.setItem(WEB_DOCUMENTS_KEY, JSON.stringify(documents));
-    } catch (_) {
-        // Browser storage can be unavailable in private or constrained contexts.
-    }
+function warnUnavailableOnce() {
+    if (hasWarnedUnavailable) return;
+    hasWarnedUnavailable = true;
+    console.warn(
+        '[persistentStorage] Tauri runtime unavailable; persistence is disabled (dev-server mode).'
+    );
 }
 
 function normalizeCommandError(error) {
@@ -51,10 +40,6 @@ function emitTaskUpdated(task) {
 }
 
 async function invokeStorage(command, payload = {}) {
-    if (!isPersistentStorageAvailable()) {
-        return null;
-    }
-
     try {
         return await invoke(command, payload);
     } catch (error) {
@@ -79,23 +64,6 @@ function normalizeDocumentInput(document = {}) {
         openedAt: nowMs(document.openedAt),
         updatedAt: nowMs(document.updatedAt || document.openedAt),
         parseStatus: document.parseStatus || 'unknown',
-    };
-}
-
-function normalizeWebDocumentRecord(document = {}) {
-    const normalized = normalizeDocumentInput(document);
-    return {
-        id: normalized.id,
-        name: normalized.name,
-        kind: normalized.kind,
-        source: normalized.source,
-        path: normalized.path,
-        mimeType: normalized.mimeType,
-        size: normalized.size,
-        fingerprint: normalized.fingerprint,
-        openedAt: normalized.openedAt,
-        updatedAt: normalized.updatedAt,
-        parseStatus: normalized.parseStatus,
     };
 }
 
@@ -344,6 +312,7 @@ function parseAttentionInsightRecord(record = {}) {
 
 export async function initializePersistentStorage() {
     if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
         return {
             initialized: false,
             reason: 'tauri-unavailable',
@@ -355,42 +324,24 @@ export async function initializePersistentStorage() {
 
 export async function listPersistentConversations() {
     if (!isPersistentStorageAvailable()) {
-        return browserListConversations().catch(() => []);
+        warnUnavailableOnce();
+        return [];
     }
     return invokeStorage('storage_list_conversations');
 }
 
 export async function loadPersistentConversation(sessionId) {
     if (!isPersistentStorageAvailable()) {
-        const messages = await browserLoadConversation(sessionId).catch(() => null);
-        if (!messages) return null;
-        return {
-            sessionId,
-            messagesJson: JSON.stringify(messages),
-            messageCount: messages.length,
-            title: '',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        };
+        warnUnavailableOnce();
+        return null;
     }
     return invokeStorage('storage_load_conversation', { sessionId });
 }
 
 export async function savePersistentConversation(sessionId, messages, metadata = {}) {
     if (!isPersistentStorageAvailable()) {
-        try {
-            await browserSaveConversation(sessionId, messages);
-        } catch (_) {
-            return null;
-        }
-        return {
-            sessionId,
-            messagesJson: JSON.stringify(messages),
-            messageCount: messages.length,
-            title: metadata.title || extractTitleFromMessages(messages),
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        };
+        warnUnavailableOnce();
+        return null;
     }
     return invokeStorage('storage_upsert_conversation', {
         input: normalizeConversationInput(sessionId, messages, metadata),
@@ -399,28 +350,24 @@ export async function savePersistentConversation(sessionId, messages, metadata =
 
 export async function deletePersistentConversation(sessionId) {
     if (!isPersistentStorageAvailable()) {
-        return browserDeleteConversation(sessionId).catch(() => false);
+        warnUnavailableOnce();
+        return false;
     }
     return invokeStorage('storage_delete_conversation', { sessionId });
 }
 
 export async function listPersistentDocuments() {
     if (!isPersistentStorageAvailable()) {
-        return readWebDocuments();
+        warnUnavailableOnce();
+        return [];
     }
     return invokeStorage('storage_list_documents');
 }
 
 export async function savePersistentDocument(document) {
     if (!isPersistentStorageAvailable()) {
-        const record = normalizeWebDocumentRecord(document);
-        if (!record.id) return null;
-        const documents = readWebDocuments().filter((item) => item?.id && item.id !== record.id);
-        const next = [record, ...documents]
-            .sort((a, b) => Number(b.openedAt || 0) - Number(a.openedAt || 0))
-            .slice(0, 100);
-        writeWebDocuments(next);
-        return record;
+        warnUnavailableOnce();
+        return null;
     }
     return invokeStorage('storage_upsert_document', {
         input: normalizeDocumentInput(document),
@@ -428,60 +375,44 @@ export async function savePersistentDocument(document) {
 }
 
 export async function savePersistentDocumentContent(documentId, contentText, metadata = {}) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_upsert_document_content', {
         input: normalizeDocumentContentInput(documentId, contentText, metadata),
     });
 }
 
 export async function loadPersistentDocumentContent(documentId) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_load_document_content', {
         documentId,
     });
 }
 
-const READING_POSITIONS_KEY = 'vibereader.readingPositions';
-
-function readBrowserReadingPositions() {
-    try {
-        const parsed = JSON.parse(localStorage.getItem(READING_POSITIONS_KEY) || '{}');
-        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-    } catch (_) {
-        return {};
-    }
-}
-
-function writeBrowserReadingPositions(map) {
-    try {
-        localStorage.setItem(READING_POSITIONS_KEY, JSON.stringify(map));
-    } catch (_) {
-        // 浏览器存储在隐私/受限上下文可能不可用
-    }
-}
-
 /**
  * 阅读位置保存（PageFlow 式 Reading Position Memory）。
- * position 结构由前端定义：{ page, scrollRatio, zoom, updatedAt }。
- * Tauri：走 storage_set_reading_position，写入 SQLite documents.reading_position 列。
- * 浏览器回退：localStorage key vibereader.readingPositions（以 documentId 为键的 JSON map）。
+ * position 结构由前端定义：{ variant, page, scrollRatio, zoom, updatedAt }。
+ * 单轨化后仅走 Tauri：storage_set_reading_position，写入 SQLite documents.reading_position 列；
+ * 非 Tauri 运行时为安全 no-op（返回 null）。
  *
  * @param {string} documentId
  * @param {{ page?: number, scrollRatio?: number, zoom?: number|string, updatedAt?: number }} position
  */
 export async function savePersistentReadingPosition(documentId, position = {}) {
-    const normalized = position && typeof position === 'object' ? position : {};
-    if (isPersistentStorageAvailable()) {
-        return invokeStorage('storage_set_reading_position', {
-            documentId: documentId || '',
-            positionJson: JSON.stringify(normalized),
-        });
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
     }
-    if (!documentId) return null;
-    const map = readBrowserReadingPositions();
-    map[documentId] = normalized;
-    writeBrowserReadingPositions(map);
-    return { documentId, position: normalized };
+    const normalized = position && typeof position === 'object' ? position : {};
+    return invokeStorage('storage_set_reading_position', {
+        documentId: documentId || '',
+        positionJson: JSON.stringify(normalized),
+    });
 }
 
 /**
@@ -491,35 +422,44 @@ export async function savePersistentReadingPosition(documentId, position = {}) {
  * @returns {Promise<{ page?: number, scrollRatio?: number, zoom?: number|string, updatedAt?: number }|null>}
  */
 export async function loadPersistentReadingPosition(documentId) {
-    if (isPersistentStorageAvailable()) {
-        const positionJson = await invokeStorage('storage_get_reading_position', { documentId });
-        if (!positionJson) return null;
-        try {
-            return JSON.parse(positionJson);
-        } catch (_) {
-            return null;
-        }
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
     }
-    if (!documentId) return null;
-    return readBrowserReadingPositions()[documentId] || null;
+    const positionJson = await invokeStorage('storage_get_reading_position', { documentId });
+    if (!positionJson) return null;
+    try {
+        return JSON.parse(positionJson);
+    } catch (_) {
+        return null;
+    }
 }
 
 export async function savePersistentThinkingTree(documentId, tree, metadata = {}) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_upsert_thinking_tree', {
         input: normalizeThinkingTreeInput(documentId, tree, metadata),
     });
 }
 
 export async function loadPersistentThinkingTree(documentId) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_load_thinking_tree', {
         documentId,
     });
 }
 
 export async function savePersistentAttentionInsights(documentId, insights = [], metadata = {}) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     const records = await invokeStorage('storage_replace_attention_insights', {
         documentId,
         insights: (Array.isArray(insights) ? insights : []).map((insight, index) =>
@@ -530,7 +470,10 @@ export async function savePersistentAttentionInsights(documentId, insights = [],
 }
 
 export async function listPersistentAttentionInsights(documentId) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     const records = await invokeStorage('storage_list_attention_insights', {
         documentId,
     });
@@ -538,7 +481,10 @@ export async function listPersistentAttentionInsights(documentId) {
 }
 
 export async function savePersistentSummary(summary) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     const record = await invokeStorage('storage_upsert_summary', {
         input: normalizeSummaryInput(summary),
     });
@@ -546,7 +492,10 @@ export async function savePersistentSummary(summary) {
 }
 
 export async function loadPersistentSummary(documentId, summaryKind, sectionId = null) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     const record = await invokeStorage('storage_load_summary', {
         documentId,
         summaryKind,
@@ -556,21 +505,30 @@ export async function loadPersistentSummary(documentId, summaryKind, sectionId =
 }
 
 export async function exportPersistentReadingNote(documentId) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_export_reading_note', {
         documentId,
     });
 }
 
 export async function importPersistentReadingNoteJson(json) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_import_reading_note_json', {
         json,
     });
 }
 
 export async function savePersistentFlashcardDecks(documentId, decks = []) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_replace_flashcard_decks', {
         documentId,
         decks: (Array.isArray(decks) ? decks : []).map((deck) =>
@@ -580,49 +538,70 @@ export async function savePersistentFlashcardDecks(documentId, decks = []) {
 }
 
 export async function listPersistentFlashcardDecks(documentId) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_list_flashcard_decks', {
         documentId,
     });
 }
 
 export async function createPersistentAnnotation(annotation) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_create_annotation', {
         input: normalizeAnnotationInput(annotation),
     });
 }
 
 export async function listPersistentAnnotations(documentId) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_list_annotations', {
         documentId,
     });
 }
 
 export async function createPersistentVibeCard(card) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_create_vibecard', {
         input: normalizeVibeCardInput(card),
     });
 }
 
 export async function deletePersistentVibeCard(id) {
-    if (!isPersistentStorageAvailable()) return false;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return false;
+    }
     return invokeStorage('storage_delete_vibecard', {
         id,
     });
 }
 
 export async function listPersistentVibeCards(documentId) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_list_vibecards', {
         documentId,
     });
 }
 
 export async function replacePersistentSourceSpans(documentId, spans = [], metadata = {}) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_replace_source_spans', {
         documentId,
         spans: (Array.isArray(spans) ? spans : []).map((span, index) =>
@@ -632,14 +611,20 @@ export async function replacePersistentSourceSpans(documentId, spans = [], metad
 }
 
 export async function listPersistentSourceSpans(documentId) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_list_source_spans', {
         documentId,
     });
 }
 
 export async function searchPersistentSourceSpans(documentId, query, options = {}) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_search_source_spans', {
         documentId,
         query: query || '',
@@ -648,21 +633,30 @@ export async function searchPersistentSourceSpans(documentId, query, options = {
 }
 
 export async function savePersistentSourceIndexStatus(documentId, status = {}) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_upsert_source_index_status', {
         input: normalizeSourceIndexStatusInput(documentId, status),
     });
 }
 
 export async function loadPersistentSourceIndexStatus(documentId) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_load_source_index_status', {
         documentId,
     });
 }
 
 export async function savePersistentTask(task = {}) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     const input = normalizeTaskInput(task);
     const record = await invokeStorage('storage_upsert_task', {
         input,
@@ -672,99 +666,58 @@ export async function savePersistentTask(task = {}) {
 }
 
 export async function loadPersistentTask(id) {
-    if (!isPersistentStorageAvailable()) return null;
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     return invokeStorage('storage_load_task', {
         id,
     });
 }
 
 export async function listPersistentTasks(documentId = null) {
-    if (!isPersistentStorageAvailable()) return [];
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return [];
+    }
     return invokeStorage('storage_list_tasks', {
         documentId,
     });
 }
 
-function readBrowserKnowledgeLinks() {
-    try {
-        const parsed = JSON.parse(localStorage.getItem(DOCUMENT_KNOWLEDGE_LINKS_KEY) || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-        return [];
-    }
-}
-
-function writeBrowserKnowledgeLinks(links) {
-    try {
-        localStorage.setItem(DOCUMENT_KNOWLEDGE_LINKS_KEY, JSON.stringify(links));
-    } catch (_) {
-        // 浏览器存储在隐私/受限上下文可能不可用
-    }
-}
-
 /**
  * 文档↔UniRAG 入库链接写入（D4）。
- * Tauri：走 storage_set_document_knowledge 命令，持久化到 SQLite documents 表的
- * unirag_source_id / knowledge_status 两列。
- * 浏览器回退：继续读写现有 localStorage key vibereader.documentKnowledgeLinks
- * （完整 link 记录数组，此处仅合并其中两个持久化字段，保持数据结构兼容）。
+ * 单轨化后仅走 Tauri：storage_set_document_knowledge 命令，持久化到 SQLite
+ * documents 表的 unirag_source_id / knowledge_status 两列；非 Tauri no-op。
  *
  * @param {string} documentId
  * @param {{ uniragSourceId?: string|null, knowledgeStatus?: string|null }} knowledge
  */
 export async function savePersistentDocumentKnowledge(documentId, knowledge = {}) {
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
+    }
     const uniragSourceId = knowledge.uniragSourceId ?? null;
     const knowledgeStatus = knowledge.knowledgeStatus ?? null;
-    if (isPersistentStorageAvailable()) {
-        return invokeStorage('storage_set_document_knowledge', {
-            documentId: documentId || '',
-            uniragSourceId,
-            knowledgeStatus,
-        });
-    }
-    if (!documentId) return null;
-    const links = readBrowserKnowledgeLinks();
-    const next = links.some((item) => item?.readerDocumentId === documentId)
-        ? links.map((item) => (
-            item?.readerDocumentId === documentId
-                ? {
-                    ...item,
-                    uniRagSourceId: uniragSourceId,
-                    status: knowledgeStatus ?? item.status ?? null,
-                }
-                : item
-        ))
-        : [
-            {
-                readerDocumentId: documentId,
-                uniRagSourceId: uniragSourceId,
-                status: knowledgeStatus || 'unknown',
-                updatedAt: Date.now(),
-            },
-            ...links,
-        ].slice(0, 500);
-    writeBrowserKnowledgeLinks(next);
-    return { documentId, uniragSourceId, knowledgeStatus };
+    return invokeStorage('storage_set_document_knowledge', {
+        documentId: documentId || '',
+        uniragSourceId,
+        knowledgeStatus,
+    });
 }
 
 /**
  * 文档↔UniRAG 入库链接读取（D4）。
- * Tauri：走 storage_get_document_knowledge 命令（SQLite）。
- * 浏览器回退：从 localStorage 现有完整记录中映射出两个字段；无记录返回 null。
+ * 单轨化后仅走 Tauri：storage_get_document_knowledge 命令（SQLite）；非 Tauri no-op。
  *
  * @param {string} documentId
  * @returns {Promise<{ uniragSourceId: string|null, knowledgeStatus: string|null }|null>}
  */
 export async function loadPersistentDocumentKnowledge(documentId) {
-    if (isPersistentStorageAvailable()) {
-        return invokeStorage('storage_get_document_knowledge', { documentId });
+    if (!isPersistentStorageAvailable()) {
+        warnUnavailableOnce();
+        return null;
     }
-    if (!documentId) return null;
-    const record = readBrowserKnowledgeLinks()
-        .find((item) => item?.readerDocumentId === documentId);
-    if (!record) return null;
-    return {
-        uniragSourceId: record.uniRagSourceId ?? null,
-        knowledgeStatus: record.status ?? null,
-    };
+    return invokeStorage('storage_get_document_knowledge', { documentId });
 }

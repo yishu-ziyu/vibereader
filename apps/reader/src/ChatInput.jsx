@@ -8,6 +8,7 @@ import { t, formatCustomModelLabel, isZhLocale } from './i18n';
 import {
     getModelConfigs, saveModelConfigs, getSelectedConfigId, setSelectedConfigId
 } from './storage';
+import { getStoredApiKey } from './apiKeyStore';
 import { findPreset, getProviderOptions, getModelOptions } from './modelPresets';
 import modelIcon from '../icons/model.svg';
 import ImageUploader from './ImageUploader';
@@ -74,6 +75,11 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
     const [customConfigs, setCustomConfigs] = useState([]);
     const [editingConfigId, setEditingConfigId] = useState(null);
+    // 同步镜像 editingConfigId，供异步 Keychain 回填判断表单是否仍在编辑同一配置
+    const editingConfigIdRef = useRef(null);
+    useEffect(() => {
+        editingConfigIdRef.current = editingConfigId;
+    }, [editingConfigId]);
     const [addFormFlash, setAddFormFlash] = useState(false);
     const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
@@ -102,6 +108,16 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
             modelName: config?.modelName || config?.name || '',
             apiFormat: getPresetApiFormat(preset, config?.apiFormat || 'openai')
         });
+        // R3：localStorage 中的配置只存空占位 apiKey；编辑表单打开时异步从
+        // Keychain 拉回明文填充（fire-and-forget），避免用户误以为 key 丢失。
+        if (config?.id && !String(config?.apiKey || '').trim()) {
+            const requestId = config.id;
+            getStoredApiKey(requestId).then((storedKey) => {
+                if (!storedKey) return;
+                if (editingConfigIdRef.current !== requestId) return;
+                form.setFieldsValue({ apiKey: storedKey });
+            }).catch(() => {});
+        }
     }, [form]);
 
     // Re-read when model config modal signals a save or external change
@@ -171,9 +187,14 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
     }, [configOpenSignal]);
 
     const handleSaveConfig = () => {
-        form.validateFields().then(values => {
+        form.validateFields().then(async (values) => {
             const wasEditing = !!editingConfigId;
-            const { baseUrl, apiKey, modelName, apiFormat } = values;
+            let { baseUrl, apiKey, modelName, apiFormat } = values;
+            // R3：编辑已有配置且表单 key 为空时（Keychain 回填未完成/被清空展示），
+            // 先从 Keychain 拉回，避免把空 key 当作用户主动清除而误删 Keychain 条目。
+            if (wasEditing && !String(apiKey || '').trim()) {
+                apiKey = (await getStoredApiKey(editingConfigId).catch(() => null)) || '';
+            }
             const configs = getCustomModelConfigs();
             const configToSave = {
                 baseUrl,
@@ -527,7 +548,7 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
     // 仅自定义模型：配置项 + 管理入口
     const customConfigsList = getCustomModelConfigs();
 
-    const handleModelSelect = ({ key }) => {
+    const handleModelSelect = async ({ key }) => {
         if (key === '__custom_manage__') {
             setIsConfigModalOpen(true);
             return;
@@ -535,6 +556,13 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
         const config = customConfigsList.find(c => c.id === key);
         if (config) {
             setSelectedConfigId(config.id);
+            // R3：localStorage 中的配置只存空占位 apiKey。切换模型时先异步从
+            // Keychain 拉回明文，保证传给运行时（onModelChange → aiService/agent）
+            // 的内存态配置始终带着完整 key。
+            let apiKey = config.apiKey || '';
+            if (!String(apiKey).trim()) {
+                apiKey = (await getStoredApiKey(config.id).catch(() => null)) || '';
+            }
             if (onModelChange) {
                 onModelChange({
                     key: 'custom',
@@ -542,6 +570,7 @@ function ChatInput({ currentModel, onModelChange, onSubmit, onStop, loading, vis
                     configId: config.id,
                     config: {
                         ...config,
+                        apiKey,
                         baseUrl: config.baseUrl || config.baseURL || '',
                     }
                 });

@@ -27,3 +27,5 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-http = "2"
+# R3：API Key 安全存储，sys 后端走 macOS Keychain
+keyring = "3"

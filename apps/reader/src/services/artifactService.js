@@ -1,31 +1,12 @@
 import {
     createPersistentVibeCard,
     deletePersistentVibeCard,
-    isPersistentStorageAvailable,
     listPersistentVibeCards,
 } from './persistentStorage';
 
-const ARTIFACTS_KEY = 'vibereader.artifacts';
-
-function readArtifacts() {
-    try {
-        const raw = localStorage.getItem(ARTIFACTS_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-        return [];
-    }
-}
-
-function writeArtifacts(artifacts) {
-    localStorage.setItem(ARTIFACTS_KEY, JSON.stringify(artifacts));
-}
-
-function createdAtMs(value) {
-    if (typeof value === 'number') return value;
-    const parsed = Date.parse(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
+// R2 存储单轨化：Lens Card/概念卡等 artifact 唯一持久化路径是
+// persistentStorage（Tauri → SQLite vibecards 表）。浏览器 localStorage
+// 回退已删除；非 Tauri 运行时由 persistentStorage 返回安全 no-op。
 
 function safeJsonParse(value, fallback) {
     if (!value || typeof value !== 'string') return fallback;
@@ -113,24 +94,13 @@ export async function createArtifact(input = {}) {
         verificationStatus: input.verificationStatus || 'ungrounded',
     };
 
-    if (isPersistentStorageAvailable()) {
-        await createPersistentVibeCard(artifactToVibeCard(artifact));
-        return artifact;
-    }
-
-    writeArtifacts([artifact, ...readArtifacts().filter((item) => item.id !== artifact.id)]);
+    await createPersistentVibeCard(artifactToVibeCard(artifact));
     return artifact;
 }
 
 export async function listArtifactsForDocument(documentId) {
-    if (isPersistentStorageAvailable()) {
-        const cards = await listPersistentVibeCards(documentId);
-        return cards.map(vibeCardToArtifact);
-    }
-
-    return readArtifacts()
-        .filter((artifact) => artifact.documentId === documentId)
-        .sort((a, b) => createdAtMs(b.createdAt) - createdAtMs(a.createdAt));
+    const cards = await listPersistentVibeCards(documentId);
+    return (cards || []).map(vibeCardToArtifact);
 }
 
 /**
@@ -142,53 +112,25 @@ export async function getArtifactById(artifactId, options = {}) {
     if (!id) return null;
 
     const documentId = options.documentId || null;
+    if (!documentId) return null;
 
-    if (isPersistentStorageAvailable()) {
-        if (!documentId) return null;
-        const artifacts = await listArtifactsForDocument(documentId);
-        return artifacts.find((artifact) => artifact.id === id) || null;
-    }
-
-    const match = readArtifacts().find((artifact) => artifact.id === id) || null;
-    if (!match) return null;
-    if (documentId && match.documentId !== documentId) return null;
-    return match;
+    const artifacts = await listArtifactsForDocument(documentId);
+    return artifacts.find((artifact) => artifact.id === id) || null;
 }
 
 export async function updateArtifact(id, patch = {}) {
-    if (isPersistentStorageAvailable()) {
-        const documentId = patch.documentId;
-        if (!documentId) return null;
+    const documentId = patch.documentId;
+    if (!documentId) return null;
 
-        const artifacts = (await listPersistentVibeCards(documentId)).map(vibeCardToArtifact);
-        const current = artifacts.find((artifact) => artifact.id === id);
-        if (!current) return null;
+    const artifacts = (await listPersistentVibeCards(documentId) || []).map(vibeCardToArtifact);
+    const current = artifacts.find((artifact) => artifact.id === id);
+    if (!current) return null;
 
-        const updated = mergeArtifact(current, patch);
-        await createPersistentVibeCard(artifactToVibeCard(updated));
-        return updated;
-    }
-
-    const artifacts = readArtifacts();
-    const index = artifacts.findIndex((artifact) => artifact.id === id);
-    if (index === -1) return null;
-
-    const updated = mergeArtifact(artifacts[index], patch);
-    const next = [...artifacts];
-    next[index] = updated;
-    writeArtifacts(next);
+    const updated = mergeArtifact(current, patch);
+    await createPersistentVibeCard(artifactToVibeCard(updated));
     return updated;
 }
 
 export async function deleteArtifact(id) {
-    if (isPersistentStorageAvailable()) {
-        return deletePersistentVibeCard(id);
-    }
-
-    writeArtifacts(readArtifacts().filter((artifact) => artifact.id !== id));
-    return true;
-}
-
-export async function clearArtifactsForDocument(documentId) {
-    writeArtifacts(readArtifacts().filter((artifact) => artifact.documentId !== documentId));
+    return deletePersistentVibeCard(id);
 }

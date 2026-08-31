@@ -63,9 +63,10 @@ import {
 } from './services/savedMemoryService';
 import {
     saveConversation, loadConversation, listConversations, deleteConversation,
-    getFontScale, setFontScale, getModelConfigs, getSelectedConfigId
+    getFontScale, setFontScale, getModelConfigs, getSelectedConfigId,
+    bootstrapModelApiKeys
 } from './storage';
-import { useConversationStore, useDocumentStore, useModelStore, usePdfStore, useProgressStore, useUIStore } from './store';
+import { useConversationStore, useDocumentStore, useModelStore, usePdfStore, useProgressStore, useUIStore, hydrateSelectedModelApiKey } from './store';
 import { useVibeStore } from './store';
 import { PdfViewer } from './PdfViewer';
 import { DocumentReader } from './DocumentReader';
@@ -660,6 +661,18 @@ export function App() {
         };
     }, [setDocuments]);
 
+    // R3：启动时执行一次 API Key 引导 ——
+    // 1) 一次性迁移：localStorage 中残留明文 apiKey 的旧配置 → 写入 Keychain → 落盘清空；
+    // 2) 从 Keychain 异步回填当前选中模型的 key 到 zustand 内存态（fire-and-forget）。
+    useEffect(() => {
+        bootstrapModelApiKeys().catch((error) => {
+            console.warn('[App] API key migration skipped:', error);
+        });
+        hydrateSelectedModelApiKey().catch((error) => {
+            console.warn('[App] API key hydrate skipped:', error);
+        });
+    }, []);
+
     useEffect(() => {
         currentSessionIdRef.current = currentSessionId;
     }, [currentSessionId]);
@@ -818,7 +831,7 @@ export function App() {
         }
     }, [currentDocument, setPdfFile, finishParsing, clearPdf, getCurrentService]);
 
-    // 保存消息到 IndexedDB
+    // 保存消息到持久层（Tauri → SQLite；非 Tauri 运行时为安全 no-op）
     const persistMessages = useCallback(async (msgs) => {
         const sid = currentSessionIdRef.current;
         if (!sid) return;

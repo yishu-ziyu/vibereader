@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModelConfigs, saveModelConfigs, getSelectedConfigId, setSelectedConfigId } from '../storage';
+import { getStoredApiKey, stripApiKeyForDurableStorage } from '../apiKeyStore';
 import { isVisionCapable } from '../modelPresets';
 import { normalizeModelConfigRecord, shouldDropModelConfigRecord } from '../modelConfigMigration';
 import { formatCustomModelLabel } from '../i18n';
@@ -126,7 +127,8 @@ export const useModelStore = create(
     {
       name: 'ai-chat-model-store',
       partialize: (state) => ({
-        selectedModel: state.selectedModel,
+        // R3：zustand persist 落盘同样不写明文 apiKey（置空占位）
+        selectedModel: stripApiKeyForDurableStorage(state.selectedModel),
         selectedConfigId: state.selectedConfigId,
       }),
       merge: (persistedState, currentState) => {
@@ -145,3 +147,31 @@ export const useModelStore = create(
     }
   )
 );
+
+/**
+ * R3：应用启动后异步从 Keychain 回填当前选中模型的 apiKey（fire-and-forget）。
+ * localStorage（zustand persist）只存空占位，这里把明文补全到运行时内存态。
+ * 拉取失败保持空占位（getStoredApiKey 内部已告警）；期间用户切换了模型则放弃。
+ *
+ * @returns {Promise<boolean>} 是否成功回填
+ */
+export async function hydrateSelectedModelApiKey() {
+  const selectedModel = useModelStore.getState().selectedModel;
+  const configId = selectedModel?.configId || selectedModel?.config?.id;
+  if (!configId) return false;
+  if (String(selectedModel?.config?.apiKey || '').trim()) return false;
+
+  const apiKey = await getStoredApiKey(configId);
+  if (!apiKey) return false;
+
+  const latest = useModelStore.getState().selectedModel;
+  if ((latest?.configId || latest?.config?.id) !== configId) return false;
+
+  useModelStore.setState({
+    selectedModel: {
+      ...latest,
+      config: { ...latest.config, apiKey },
+    },
+  });
+  return true;
+}

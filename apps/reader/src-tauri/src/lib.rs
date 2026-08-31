@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod core;
 
+use commands::api_keys::{storage_delete_api_key, storage_get_api_key, storage_set_api_key};
 use commands::storage::{
     storage_create_annotation, storage_create_vibecard, storage_delete_conversation,
     storage_delete_vibecard, storage_export_reading_note, storage_get_document_knowledge,
@@ -61,6 +62,9 @@ pub fn run() {
             storage_upsert_task,
             storage_load_task,
             storage_list_tasks,
+            storage_set_api_key,
+            storage_get_api_key,
+            storage_delete_api_key,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

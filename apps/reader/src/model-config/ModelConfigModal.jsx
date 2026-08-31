@@ -14,6 +14,7 @@ import {
     isVisionCapable, PROVIDER_PRESETS,
 } from '../modelPresets';
 import { saveModelConfigs, getModelConfigs, getSelectedConfigId, setSelectedConfigId } from '../storage';
+import { getStoredApiKey } from '../apiKeyStore';
 import { resolveAiEndpointForRuntime } from '../aiEndpoint';
 
 const { TextArea } = Input;
@@ -151,6 +152,11 @@ function formatOpenAIEndpoint(baseUrl) {
 export function ModelConfigModal({ open, onClose, onSaved }) {
     const [customConfigs, setCustomConfigs] = useState(() => getModelConfigs() || []);
     const [editingConfigId, setEditingConfigId] = useState(null);
+    // 同步镜像 editingConfigId，供异步 Keychain 回填判断表单是否仍在编辑同一配置
+    const editingConfigIdRef = useRef(null);
+    useEffect(() => {
+        editingConfigIdRef.current = editingConfigId;
+    }, [editingConfigId]);
     const [selectedPresetKey, setSelectedPresetKey] = useState(null);
     const [selectedPresetModel, setSelectedPresetModel] = useState(null);
     const [testing, setTesting] = useState(false);
@@ -193,6 +199,16 @@ export function ModelConfigModal({ open, onClose, onSaved }) {
             presetKey: presetKey || undefined,
             presetModel: config.modelName || config.name || undefined,
         });
+        // R3：localStorage 中的配置只存空占位 apiKey；编辑表单打开时异步从
+        // Keychain 拉回明文填充（fire-and-forget），避免用户误以为 key 丢失。
+        if (config.id && !String(config.apiKey || '').trim()) {
+            const requestId = config.id;
+            getStoredApiKey(requestId).then((storedKey) => {
+                if (!storedKey) return;
+                if (editingConfigIdRef.current !== requestId) return;
+                form.setFieldsValue({ apiKey: storedKey });
+            }).catch(() => {});
+        }
     }, [form, findPresetForConfig]);
 
     // Open modal: select existing config or reset to blank
@@ -263,15 +279,21 @@ export function ModelConfigModal({ open, onClose, onSaved }) {
     }, []);
 
     const handleSaveConfig = useCallback(() => {
-        form.validateFields().then((values) => {
+        form.validateFields().then(async (values) => {
             const configs = [...customConfigs];
             const presetKey = values.presetKey || selectedPresetKey;
             const preset = findPreset(presetKey);
             const apiFormat = values.apiFormat || getPresetApiFormat(preset);
+            // R3：编辑已有配置且表单 key 为空时，先从 Keychain 拉回，
+            // 避免把空 key 当作用户主动清除而误删 Keychain 条目。
+            let apiKey = values.apiKey || '';
+            if (editingConfigId && !String(apiKey).trim()) {
+                apiKey = (await getStoredApiKey(editingConfigId).catch(() => null)) || '';
+            }
             const record = {
                 id: editingConfigId || `custom-${Date.now()}`,
                 baseUrl: normalizeFormBaseUrl(values.baseUrl, apiFormat, preset),
-                apiKey: values.apiKey || '',
+                apiKey,
                 modelName: values.modelName,
                 name: values.modelName,
                 apiFormat,

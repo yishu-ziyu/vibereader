@@ -8,6 +8,7 @@ import { useConversationStore, useDocumentStore, usePdfStore, useUIStore, useVib
 const DRAG_INJECT_MIME = 'application/x-vibereader-drag-inject';
 
 vi.mock('./storage', () => ({
+    bootstrapModelApiKeys: vi.fn().mockResolvedValue(0),
     deleteConversation: vi.fn().mockResolvedValue(true),
     getFontScale: vi.fn(() => 1),
     getModelConfigs: vi.fn(() => []),

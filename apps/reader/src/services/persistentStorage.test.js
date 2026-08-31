@@ -35,6 +35,8 @@ import {
     savePersistentSourceIndexStatus,
     searchPersistentSourceSpans,
     savePersistentThinkingTree,
+    savePersistentDocumentKnowledge,
+    loadPersistentDocumentKnowledge,
     TASK_UPDATED_EVENT,
 } from './persistentStorage';
 
@@ -48,49 +50,71 @@ describe('persistentStorage', () => {
     beforeEach(() => {
         delete window.__TAURI__;
         delete window.__TAURI_INTERNALS__;
-        localStorage.clear();
         invokeMock.mockReset();
     });
 
-    it('reports unavailable in browser runtime and returns safe empty lists', async () => {
+    it('reports unavailable in browser runtime and degrades to safe no-ops', async () => {
         expect(isPersistentStorageAvailable()).toBe(false);
 
-        await expect(initializePersistentStorage()).resolves.toEqual({
-            initialized: false,
-            reason: 'tauri-unavailable',
-        });
-        await expect(listPersistentDocuments()).resolves.toEqual([]);
-        await expect(loadPersistentDocumentContent('doc-1')).resolves.toBeNull();
-        await expect(savePersistentDocumentContent('doc-1', 'Browser text')).resolves.toBeNull();
-        await expect(listPersistentConversations()).resolves.toEqual([]);
-        await expect(loadPersistentConversation('session-1')).resolves.toBeNull();
-        await expect(deletePersistentConversation('session-1')).resolves.toBe(false);
-        await expect(loadPersistentThinkingTree('doc-1')).resolves.toBeNull();
-        await expect(listPersistentAttentionInsights('doc-1')).resolves.toEqual([]);
-        await expect(loadPersistentSummary('doc-1', 'section', 'section-0')).resolves.toBeNull();
-        await expect(exportPersistentReadingNote('doc-1')).resolves.toBeNull();
-        await expect(importPersistentReadingNoteJson('{"exportType":"reading_note"}')).resolves.toBeNull();
-        await expect(listPersistentFlashcardDecks('doc-1')).resolves.toEqual([]);
-        await expect(listPersistentAnnotations('doc-1')).resolves.toEqual([]);
-        await expect(listPersistentVibeCards('doc-1')).resolves.toEqual([]);
-        await expect(listPersistentSourceSpans('doc-1')).resolves.toEqual([]);
-        await expect(replacePersistentSourceSpans('doc-1', [{ id: 'span-1' }])).resolves.toEqual([]);
-        await expect(searchPersistentSourceSpans('doc-1', 'method')).resolves.toEqual([]);
-        await expect(loadPersistentSourceIndexStatus('doc-1')).resolves.toBeNull();
-        await expect(savePersistentSourceIndexStatus('doc-1', {
-            indexSignature: 'sig-browser',
-            spanCount: 2,
-        })).resolves.toBeNull();
-        await expect(savePersistentTask({
-            id: 'task-browser',
-            documentId: 'doc-1',
-            type: 'source_index',
-            status: 'running',
-        })).resolves.toBeNull();
-        await expect(loadPersistentTask('task-browser')).resolves.toBeNull();
-        await expect(listPersistentTasks('doc-1')).resolves.toEqual([]);
-        await expect(deletePersistentVibeCard('card-1')).resolves.toBe(false);
-        expect(invokeMock).not.toHaveBeenCalled();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            await expect(initializePersistentStorage()).resolves.toEqual({
+                initialized: false,
+                reason: 'tauri-unavailable',
+            });
+            // R2 存储单轨化：非 Tauri 运行时所有持久化函数均为安全 no-op，
+            // 且只 console.warn 一次（模块级 flag 防刷屏）。
+            await expect(listPersistentDocuments()).resolves.toEqual([]);
+            await expect(savePersistentDocument({ id: 'doc-1', name: 'Paper.pdf' })).resolves.toBeNull();
+            await expect(loadPersistentDocumentContent('doc-1')).resolves.toBeNull();
+            await expect(savePersistentDocumentContent('doc-1', 'Browser text')).resolves.toBeNull();
+            await expect(listPersistentConversations()).resolves.toEqual([]);
+            await expect(loadPersistentConversation('session-1')).resolves.toBeNull();
+            await expect(savePersistentConversation('session-1', [{ role: 'user' }])).resolves.toBeNull();
+            await expect(deletePersistentConversation('session-1')).resolves.toBe(false);
+            await expect(savePersistentReadingPosition('doc-1', { page: 2 })).resolves.toBeNull();
+            await expect(loadPersistentReadingPosition('doc-1')).resolves.toBeNull();
+            await expect(savePersistentThinkingTree('doc-1', { id: 'root' })).resolves.toBeNull();
+            await expect(loadPersistentThinkingTree('doc-1')).resolves.toBeNull();
+            await expect(savePersistentAttentionInsights('doc-1', [{ id: 'attention-1' }])).resolves.toEqual([]);
+            await expect(listPersistentAttentionInsights('doc-1')).resolves.toEqual([]);
+            await expect(savePersistentSummary({ documentId: 'doc-1' })).resolves.toBeNull();
+            await expect(loadPersistentSummary('doc-1', 'section', 'section-0')).resolves.toBeNull();
+            await expect(exportPersistentReadingNote('doc-1')).resolves.toBeNull();
+            await expect(importPersistentReadingNoteJson('{"exportType":"reading_note"}')).resolves.toBeNull();
+            await expect(savePersistentFlashcardDecks('doc-1', [{ id: 'deck-1' }])).resolves.toEqual([]);
+            await expect(listPersistentFlashcardDecks('doc-1')).resolves.toEqual([]);
+            await expect(createPersistentAnnotation({ documentId: 'doc-1' })).resolves.toBeNull();
+            await expect(listPersistentAnnotations('doc-1')).resolves.toEqual([]);
+            await expect(createPersistentVibeCard({ id: 'card-1' })).resolves.toBeNull();
+            await expect(listPersistentVibeCards('doc-1')).resolves.toEqual([]);
+            await expect(listPersistentSourceSpans('doc-1')).resolves.toEqual([]);
+            await expect(replacePersistentSourceSpans('doc-1', [{ id: 'span-1' }])).resolves.toEqual([]);
+            await expect(searchPersistentSourceSpans('doc-1', 'method')).resolves.toEqual([]);
+            await expect(loadPersistentSourceIndexStatus('doc-1')).resolves.toBeNull();
+            await expect(savePersistentSourceIndexStatus('doc-1', {
+                indexSignature: 'sig-browser',
+                spanCount: 2,
+            })).resolves.toBeNull();
+            await expect(savePersistentTask({
+                id: 'task-browser',
+                documentId: 'doc-1',
+                type: 'source_index',
+                status: 'running',
+            })).resolves.toBeNull();
+            await expect(loadPersistentTask('task-browser')).resolves.toBeNull();
+            await expect(listPersistentTasks('doc-1')).resolves.toEqual([]);
+            await expect(deletePersistentVibeCard('card-1')).resolves.toBe(false);
+            await expect(savePersistentDocumentKnowledge('doc-1', {
+                uniragSourceId: 'source-1',
+                knowledgeStatus: 'completed',
+            })).resolves.toBeNull();
+            await expect(loadPersistentDocumentKnowledge('doc-1')).resolves.toBeNull();
+            expect(invokeMock).not.toHaveBeenCalled();
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+        } finally {
+            warnSpy.mockRestore();
+        }
     });
 
     it('uses Tauri invoke commands when persistent storage is available', async () => {
@@ -430,79 +454,6 @@ describe('persistentStorage', () => {
         expect(invokeMock).toHaveBeenNthCalledWith(2, 'storage_get_reading_position', {
             documentId: 'doc-1',
         });
-    });
-
-    it('falls back to localStorage for reading positions in browser runtime', async () => {
-        expect(isPersistentStorageAvailable()).toBe(false);
-
-        await expect(savePersistentReadingPosition('doc-web', {
-            page: 2,
-            scrollRatio: 0.75,
-            updatedAt: 456,
-        })).resolves.toEqual({
-            documentId: 'doc-web',
-            position: { page: 2, scrollRatio: 0.75, updatedAt: 456 },
-        });
-
-        const stored = JSON.parse(localStorage.getItem('vibereader.readingPositions'));
-        expect(stored['doc-web']).toEqual({ page: 2, scrollRatio: 0.75, updatedAt: 456 });
-
-        await expect(loadPersistentReadingPosition('doc-web')).resolves.toEqual({
-            page: 2,
-            scrollRatio: 0.75,
-            updatedAt: 456,
-        });
-        await expect(loadPersistentReadingPosition('doc-missing')).resolves.toBeNull();
-        await expect(loadPersistentReadingPosition('')).resolves.toBeNull();
-        expect(invokeMock).not.toHaveBeenCalled();
-    });
-
-    it('persists browser document records locally for Web refresh recovery', async () => {
-        expect(isPersistentStorageAvailable()).toBe(false);
-
-        await expect(savePersistentDocument({
-            id: 'doc-old',
-            name: 'Older Paper.pdf',
-            kind: 'pdf',
-            source: 'browser-upload',
-            openedAt: 100,
-            contentText: 'must not be stored in recent record',
-        })).resolves.toEqual(expect.objectContaining({
-            id: 'doc-old',
-            name: 'Older Paper.pdf',
-            kind: 'pdf',
-            openedAt: 100,
-        }));
-        await expect(savePersistentDocument({
-            id: 'doc-new',
-            name: 'Newer Notes.md',
-            kind: 'markdown',
-            source: 'browser-upload',
-            openedAt: 200,
-            contentText: 'must not be stored in recent record',
-        })).resolves.toEqual(expect.objectContaining({
-            id: 'doc-new',
-            name: 'Newer Notes.md',
-            kind: 'markdown',
-            openedAt: 200,
-        }));
-
-        await expect(listPersistentDocuments()).resolves.toEqual([
-            expect.objectContaining({
-                id: 'doc-new',
-                name: 'Newer Notes.md',
-                kind: 'markdown',
-                openedAt: 200,
-            }),
-            expect.objectContaining({
-                id: 'doc-old',
-                name: 'Older Paper.pdf',
-                kind: 'pdf',
-                openedAt: 100,
-            }),
-        ]);
-        expect(JSON.stringify(await listPersistentDocuments())).not.toContain('must not be stored');
-        expect(invokeMock).not.toHaveBeenCalled();
     });
 
     it('maps command errors into readable JavaScript errors', async () => {

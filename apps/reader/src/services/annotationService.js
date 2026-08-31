@@ -1,24 +1,11 @@
 import {
     createPersistentAnnotation,
-    isPersistentStorageAvailable,
     listPersistentAnnotations,
 } from './persistentStorage';
 
-const ANNOTATIONS_KEY = 'vibereader.annotations';
-
-function readAnnotations() {
-    try {
-        const raw = localStorage.getItem(ANNOTATIONS_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_) {
-        return [];
-    }
-}
-
-function writeAnnotations(annotations) {
-    localStorage.setItem(ANNOTATIONS_KEY, JSON.stringify(annotations));
-}
+// R2 存储单轨化：批注唯一持久化路径是 persistentStorage（Tauri → SQLite）。
+// 浏览器 localStorage 回退已删除；非 Tauri 运行时由 persistentStorage
+// 返回安全 no-op。
 
 export async function createAnnotation(input) {
     const annotation = {
@@ -32,24 +19,9 @@ export async function createAnnotation(input) {
         createdAt: Date.now(),
     };
 
-    if (isPersistentStorageAvailable()) {
-        return createPersistentAnnotation(annotation);
-    }
-
-    writeAnnotations([annotation, ...readAnnotations()]);
-    return annotation;
+    return createPersistentAnnotation(annotation);
 }
 
 export async function listAnnotationsForDocument(documentId) {
-    if (isPersistentStorageAvailable()) {
-        return listPersistentAnnotations(documentId);
-    }
-
-    return readAnnotations()
-        .filter((annotation) => annotation.documentId === documentId)
-        .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-export async function clearAnnotationsForDocument(documentId) {
-    writeAnnotations(readAnnotations().filter((annotation) => annotation.documentId !== documentId));
+    return listPersistentAnnotations(documentId);
 }
