@@ -1,0 +1,47 @@
+# Looper Configuration for UniRag Quality Evaluation
+# Target: Evaluate RAG outputs on Accuracy, Style, and Citation correctness
+
+name: unirag-quality-eval
+description: Evaluates and tunes UniRag's answer quality, style adherence, and citation accuracy.
+
+# The target system being evaluated and modified
+target:
+  # The command that actually runs UniRag and generates an answer
+  command: "python -c \"import asyncio; from uni_rag.rag.pipeline import query; r = asyncio.run(query('解释一下什么是量子计算', style='academic')); print(r['answer'])\""
+
+  # The files Looper is allowed to modify to improve the score
+  # We strictly limit this to prompts and configuration, not core logic
+  tunable_files:
+    - "../../src/uni_rag/llm/prompts.py"
+    - "../../src/uni_rag/config.py"
+
+# Verification mechanisms (What defines "success")
+verification:
+  # LLM-as-judge setup
+  council:
+    judges:
+      # We use Sonnet for evaluation as it strikes the best balance of speed and reasoning
+      - name: claude-sonnet-4-6
+        weight: 1.0
+
+    # Custom evaluation prompt combining the three dimensions
+    rubric: |
+      You are evaluating a RAG (Retrieval-Augmented Generation) system's output.
+      Evaluate the response based on the following three criteria out of 10 points:
+
+      1. Accuracy (40%): Does the answer directly address the question using factual, non-hallucinated information?
+      2. Citation Verification (35%): Does every factual claim have an explicit citation marker like [doc1:chunk2]? Are they formatted correctly?
+      3. Style Adherence (25%): Does the response perfectly match the requested 'academic' style? (Objective, rigorous, formal tone).
+
+      Calculate the weighted total out of 10.
+      If the total score is >= 7.5 AND no individual score is < 7.0, output PASS.
+      Otherwise, output FAIL.
+
+      Explain your reasoning before your final verdict.
+
+# Control mechanisms
+control:
+  max_iterations: 3
+
+  # Automatically stop if the exact same score is achieved twice in a row (stuck in local minima)
+  stop_on_plateau: true

@@ -1,6 +1,6 @@
 # Nested repositories are tracked and pushed independently during Phase C.0.
-/apps/reader/
-/services/uni-rag/
+# DEC-0005 (2026-08-31): apps/reader and services/uni-rag squash-imported into
+# this repo; only vibereader-macos remains a nested repo (own local .git).
 /apps/vibereader-macos/
 
 # Runtime and local noise

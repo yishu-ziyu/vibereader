@@ -1,0 +1,39 @@
+# Task: vibereader-20260628-001
+# State machine for E2E bug fixes
+
+phase: loop
+activeTask: vibereader-20260628-001
+iteration: 1
+maxIterations: 5
+stopReason: null
+status: completed
+blocked: []
+completedMilestones:
+  - project-init
+
+# P0 (must fix)
+p0:
+  - bug_01_help_guide_markdown_rendering: VERIFIED (markdown CSS + table + h1/h2/list all render)
+  - bug_02_import_should_skip_template_records: FIXED (filter by id 'import-' prefix)
+  - bug_03_preset_dropdown_not_synced_after_import: FIXED (Select uses form.getFieldValue)
+  - bug_05_bottom_model_selector_not_refreshed: FIXED (CustomEvent + configsVersion)
+
+# P1 (should fix)
+p1:
+  - bug_04_form_placeholders_residual: FIXED (placeholders use selectedPreset)
+  - bug_06_template_vs_saved_visual_distinction: FIXED (blue ghost + light bg)
+  - bug_07_existing_configs_disappeared: FIXED (providerKey in default configs)
+  - bug_09_default_selects_first_provider_not_active: FIXED (findPresetForConfig fallback)
+  - bug_10_template_does_not_sync_preset_dropdown: FIXED (form fields drive Select)
+  - bug_11_apiFormat_placeholder_when_filled: FIXED (preset.apiFormat sync)
+
+# P2 (nice to have)
+p2:
+  - bug_08_template_button_wrapping: NOT FIXED (low priority)
+  - bug_12_pdf_reader_tab_close: NOT FIXED (Tauri-only, not reproducible in dev)
+
+stopConditions:
+  - max_iterations: 5
+  - same_failure_2x: stop
+  - regression: stop
+  - no_progress_2x: split

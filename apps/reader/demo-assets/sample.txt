@@ -1,0 +1,7 @@
+VibeReader plain-text demo
+
+This file verifies that the reading workspace is not limited to PDF. A user can open a local text note, select a passage, and send it to the AI assistant without switching away from the document.
+
+Suggested demo selection:
+The same left-read, right-ask workflow works for lightweight notes.
+

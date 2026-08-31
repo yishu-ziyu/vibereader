@@ -1,0 +1,12 @@
+{
+  "status": "configured",
+  "loop_id": "unirag-quality-eval-1",
+  "tunable_files": [
+    "../../src/uni_rag/llm/prompts.py",
+    "../../src/uni_rag/config.py"
+  ],
+  "council": {
+    "judges": ["claude-sonnet-4-6"]
+  },
+  "score_threshold": 7.5
+}

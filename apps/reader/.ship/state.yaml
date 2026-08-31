@@ -1,0 +1,35 @@
+# yishuship — Project State & Intelligence
+# 每次新会话启动时读这个文件，然后按状态机决定下一步。
+
+phase: design
+activeTask: null
+blocked: []
+completedMilestones:
+  - project-init
+lastSync: "2026-06-27"
+
+# Phase 状态机
+# idle → intake → design → loop → qa → handoff → idle
+#
+# 中枢判断规则
+#
+# 自动进入 loop 的条件（满足任一）：
+#   1. 有 plan.md 且 run_state.yaml status 是 pending 或 failed
+#   2. 上一轮 loop 因停止条件退出，有明确失败项
+#   3. 用户说"继续"/"接着做"/"修一下"
+#
+# 不进入 loop 的情况：
+#   1. 用户说"看看"/"了解一下" → 调研
+#   2. 用户说"帮我看看这段代码" → review
+#   3. 没有 plan.md，用户说"做个功能" → 先走 PM intake
+#   4. loop 已连续失败 2 次同一问题 → 停止升级
+#
+# 中枢自主权：
+#   自主：进入哪个 phase、执行哪个检查、是否进 loop、循环推进
+#   必须问用户：需求模糊、范围变更、停止条件触发、架构决策
+#
+# 会话启动协议：
+#   1. 读 state.yaml
+#   2. 如果有活跃任务且有 plan.md → 读 plan.md + run_state.yaml
+#   3. 判断：继续 loop / 新任务 / 空闲
+#   4. 给用户一句话汇报当前状态和建议

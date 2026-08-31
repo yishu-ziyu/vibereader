@@ -1,0 +1,8 @@
+{
+  "commands": {
+    "loop": {
+      "source": "file",
+      "path": ".claude/commands/loop.md"
+    }
+  }
+}

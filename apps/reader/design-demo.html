@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeReader — Esther Design System 风格 Demo</title>
+<style>
+/* ===== Esther Design System 核心变量 ===== */
+:root {
+  --esther-blue: #2B7FD8;
+  --esther-yellow: #F4D758;
+  --esther-red: #E84A5F;
+  --esther-cream: #fefcf6;
+  --esther-cream-deep: #faf6eb;
+  --esther-ink: #1A1A2E;
+  --esther-gray: #4A4A5A;
+  --esther-gray-light: #888;
+  --esther-border: rgba(26,26,46,0.08);
+
+  /* 应用变量 */
+  --bg-main: var(--esther-cream);
+  --bg-sidebar: var(--esther-cream-deep);
+  --bg-card: #ffffff;
+  --text-primary: var(--esther-ink);
+  --text-secondary: var(--esther-gray);
+  --text-tertiary: var(--esther-gray-light);
+  --accent: var(--esther-blue);
+  --accent-light: rgba(43,127,216,0.1);
+  --radius: 12px;
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.04);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-focus: 0 0 0 3px var(--accent-light);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', 'Noto Sans SC', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===== 三栏布局 ===== */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ===== 左侧边栏 ===== */
+.sidebar {
+  width: 260px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--esther-border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--esther-blue);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--esther-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43,127,216,0.3);
+}
+
+.upload-zone {
+  border: 2px dashed rgba(43,127,216,0.25);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.upload-zone:hover {
+  border-color: var(--esther-blue);
+  background: rgba(43,127,216,0.03);
+}
+
+.upload-zone .pdf-icon {
+  font-size: 28px;
+  color: var(--esther-blue);
+  margin-bottom: 6px;
+}
+
+.upload-zone .filename {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.session-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s;
+  color: var(--text-secondary);
+}
+
+.session-item:hover {
+  background: rgba(43,127,216,0.06);
+}
+
+.session-item.active {
+  background: rgba(43,127,216,0.1);
+  color: var(--esther-blue);
+  font-weight: 500;
+}
+
+/* ===== 主工作区 ===== */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  height: 52px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--esther-border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.header-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.reader-pane {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--esther-border);
+}
+
+.pane-header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--esther-border);
+  justify-content: space-between;
+}
+
+.pane-header .meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.pdf-viewer {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-page {
+  width: 100%;
+  max-width: 640px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  padding: 48px 56px;
+  min-height: 800px;
+  font-family: 'Georgia', serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.divider {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+}
+
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 32px;
+  background: var(--esther-border);
+  border-radius: 2px;
+}
+
+/* ===== 右侧 AI 面板 ===== */
+.ai-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-main);
+}
+
+/* Tab 栏 */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--esther-border);
+  padding: 0 12px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+}
+
+.tab {
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  border-bottom-color: var(--esther-blue);
+  color: var(--esther-blue);
+  font-weight: 600;
+}
+
+.tab-badge {
+  display: inline-flex;
+  width: 6px;
+  height: 6px;
+  background: var(--esther-yellow);
+  border-radius: 50%;
+}
+
+/* 面板内容 */
+.panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* ===== 思维树面板 ===== */
+.tree-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--esther-border);
+}
+
+.tree-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--esther-yellow);
+  color: var(--esther-ink);
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.tree-node {
+  padding: 6px 0;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-node:hover {
+  background: rgba(43,127,216,0.06);
+}
+
+.tree-node.section {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 8px;
+}
+
+.tree-node.paragraph {
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.tree-node.paragraph.active {
+  background: rgba(244,215,88,0.25);
+  color: var(--esther-ink);
+  font-weight: 500;
+}
+
+.tree-node .page-tag {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+  padding: 1px 6px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 4px;
+}
+
+.toggle-btn {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ===== 导航仪面板 ===== */
+.navigator-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.navigator-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.insight-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.insight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.insight-card.innovation { border-left-color: #52c41a; }
+.insight-card.method { border-left-color: var(--esther-blue); }
+.insight-card.comparison { border-left-color: #722ed1; }
+.insight-card.anomaly { border-left-color: #fa8c16; }
+
+.insight-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.insight-tag.innovation { background: #f6ffed; color: #52c41a; }
+.insight-tag.method { background: #e6f4ff; color: var(--esther-blue); }
+.insight-tag.comparison { background: #f9f0ff; color: #722ed1; }
+.insight-tag.anomaly { background: #fff7e6; color: #fa8c16; }
+
+.insight-desc {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.insight-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ===== 聊天输入框 ===== */
+.chat-input {
+  padding: 12px 16px;
+  border-top: 1px solid var(--esther-border);
+  background: var(--bg-card);
+}
+
+.input-box {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--esther-border);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  resize: none;
+  min-height: 44px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.input-box:focus {
+  border-color: var(--esther-blue);
+  box-shadow: var(--shadow-focus);
+}
+
+.input-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.15s;
+}
+
+.icon-btn:hover {
+  background: rgba(43,127,216,0.08);
+  color: var(--esther-blue);
+}
+
+.send-btn {
+  padding: 8px 20px;
+  background: var(--esther-blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43,127,216,0.3);
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  gap: 12px;
+}
+
+.empty-state .logo {
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+/* ===== 生成按钮 ===== */
+.generate-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+}
+
+.generate-btn .btn {
+  padding: 10px 24px;
+  background: var(--esther-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.generate-btn .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43,127,216,0.25);
+}
+
+.generate-btn .icon {
+  font-size: 32px;
+  opacity: 0.4;
+  color: var(--esther-blue);
+}
+
+/* ===== 隐藏/显示 ===== */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧边栏 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">V</div>
+      <span>VibeReader</span>
+    </div>
+    <button class="btn-primary">+ 新会话</button>
+    <div class="upload-zone">
+      <div class="pdf-icon">&#128196;</div>
+      <div style="font-size: 12px; color: var(--text-secondary);">拖拽 PDF 到此处，或点击上传</div>
+      <div class="filename">test.pdf</div>
+    </div>
+    <div class="section-title">会话列表</div>
+    <div class="session-item active">
+      <span>Alice in Wonderland</span>
+      <span style="opacity: 0.4;">&#128465;</span>
+    </div>
+    <div class="session-item">
+      <span>论文精读 #3</span>
+    </div>
+    <div class="session-item">
+      <span>文献综述整理</span>
+    </div>
+  </aside>
+
+  <!-- 主工作区 -->
+  <main class="main">
+    <header class="header">
+      <div class="header-left">
+        <span style="cursor: pointer; color: var(--text-tertiary);">&#9776;</span>
+        <span>Workspace</span>
+      </div>
+      <div class="header-meta">PDF 已加载，共 29 页</div>
+    </header>
+
+    <div class="workspace">
+      <!-- PDF 阅读器 -->
+      <div class="reader-pane">
+        <div class="pane-header">
+          <span>&#128209; test.pdf</span>
+          <span class="meta">PDF 阅读器</span>
+        </div>
+        <div class="pdf-viewer">
+          <div class="pdf-page">
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">The Project Gutenberg EBook of Alice in Wonderland, by Lewis Carroll</p>
+            <p style="margin-bottom: 16px;">This eBook is for the use of anyone anywhere at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org</p>
+            <p style="font-weight: bold; margin: 24px 0 8px;">Title: Alice in Wonderland</p>
+            <p style="margin-bottom: 8px;">Author: Lewis Carroll</p>
+            <p style="margin-bottom: 8px;">Illustrator: Gordon Robinson</p>
+            <p style="margin-bottom: 24px;">Release Date: August 12, 2006 [EBook #19033]</p>
+            <p style="text-align: center; font-style: italic; margin: 40px 0; color: #666;">ALICE'S ADVENTURES IN WONDERLAND</p>
+            <p style="text-align: center; font-size: 12px; color: #999;">SAM'L GABRIEL SONS & COMPANY<br>NEW YORK</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 右侧面板 -->
+      <div class="ai-pane">
+        <div class="tab-bar">
+          <button class="tab" onclick="switchTab('chat')">
+            <span>&#128172;</span> 新对话
+          </button>
+          <button class="tab" onclick="switchTab('summary')">
+            <span>&#9889;</span> 论文摘要
+          </button>
+          <button class="tab" onclick="switchTab('cards')">
+            <span>&#128218;</span> 记忆卡片
+          </button>
+          <button class="tab active" onclick="switchTab('mindmap')">
+            <span>&#128207;</span> 思维树
+          </button>
+          <button class="tab" onclick="switchTab('navigator')">
+            <span class="tab-badge"></span> 导航仪
+          </button>
+        </div>
+
+        <div class="panel-content">
+          <!-- 思维树面板 -->
+          <div id="panel-mindmap" class="tree-panel">
+            <div class="tree-header">
+              <h3><span>&#128207;</span> Paper <span class="section-tag">1 sections</span></h3>
+            </div>
+            <div class="tree-node section">
+              <span class="toggle-btn">&#9660;</span>
+              <span>Body</span>
+            </div>
+            <div class="tree-node paragraph">
+              <span style="width: 16px; display: inline-block;"></span>
+              <span>The Project Gutenberg EBook of Alice...</span>
+              <span class="page-tag">P1</span>
+            </div>
+            <div class="tree-node paragraph">
+              <span style="width: 16px; display: inline-block;"></span>
+              <span>NEW YORK ALICE'S ADVENTURES IN WONDER...</span>
+              <span class="page-tag">P2</span>
+            </div>
+            <div class="tree-node paragraph active">
+              <span style="width: 16px; display: inline-block;"></span>
+              <span>Once or twice she...</span>
+              <span class="page-tag">P2</span>
+            </div>
+            <div class="tree-node paragraph">
+              <span style="width: 16px; display: inline-block;"></span>
+              <span>There was nothing...</span>
+              <span class="page-tag">P2</span>
+            </div>
+            <div class="tree-node section">
+              <span class="toggle-btn">&#9660;</span>
+              <span>Chapter I</span>
+            </div>
+            <div class="tree-node paragraph">
+              <span style="width: 16px; display: inline-block;"></span>
+              <span>suddenly, thump!</span>
+              <span class="page-tag">P3</span>
+            </div>
+          </div>
+
+          <!-- 导航仪面板 -->
+          <div id="panel-navigator" class="navigator-panel hidden">
+            <div class="navigator-header">
+              <span>&#128506;</span> 注意力导航
+            </div>
+            <div class="insight-card innovation">
+              <span class="insight-tag innovation">创新点</span>
+              <div class="insight-desc">这里可能概括了论文的新贡献，适合作为优先阅读位置。</div>
+              <div class="insight-meta">P28 · page-28-para-0</div>
+            </div>
+            <div class="insight-card method">
+              <span class="insight-tag method">方法亮点</span>
+              <div class="insight-desc">这里可能说明了论文的核心方法，需要先理解其技术路径。</div>
+              <div class="insight-meta">P26 · page-26-para-0</div>
+            </div>
+            <div class="insight-card comparison">
+              <span class="insight-tag comparison">关键对比</span>
+              <div class="insight-desc">这里包含关键对比信息，有助于判断论文相对已有工作的价值。</div>
+              <div class="insight-meta">P3 · page-3-para-0</div>
+            </div>
+            <div class="insight-card anomaly">
+              <span class="insight-tag anomaly">实验反常</span>
+              <div class="insight-desc">这里可能出现反常结果或限制条件，值得仔细核对。</div>
+              <div class="insight-meta">P5 · page-5-para-0</div>
+            </div>
+            <button class="btn-primary" style="margin-top: 8px; font-size: 13px; padding: 8px 16px;">&#128260; 重新分析</button>
+          </div>
+        </div>
+
+        <!-- 聊天输入 -->
+        <div class="chat-input">
+          <textarea class="input-box" placeholder="按 Enter 发送消息，Shift+Enter 换行" rows="2"></textarea>
+          <div class="input-toolbar">
+            <div class="toolbar-left">
+              <button class="icon-btn" title="上传图片">&#128247;</button>
+              <button class="icon-btn" title="截图">&#9986;</button>
+              <button class="icon-btn" title="网页搜索">&#127760;</button>
+              <button class="icon-btn" title="链接">&#128279;</button>
+              <button class="icon-btn" style="font-size: 13px; width: auto; padding: 0 8px; gap: 4px;" title="模型">
+                <span>&#129302;</span> 自定义模型
+              </button>
+            </div>
+            <button class="send-btn">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.closest('.tab').classList.add('active');
+
+  document.getElementById('panel-mindmap').classList.add('hidden');
+  document.getElementById('panel-navigator').classList.add('hidden');
+
+  if (tab === 'mindmap') {
+    document.getElementById('panel-mindmap').classList.remove('hidden');
+  } else if (tab === 'navigator') {
+    document.getElementById('panel-navigator').classList.remove('hidden');
+  }
+}
+</script>
+</body>
+</html>

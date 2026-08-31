@@ -1,0 +1,16 @@
+services:
+  uni-rag:
+    build: .
+    image: uni-rag:0.3
+    container_name: uni-rag
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8766:8766"
+    volumes:
+      - uni-rag-data:/data
+    env_file:
+      - .env
+
+volumes:
+  uni-rag-data:
+    driver: local
