@@ -26,9 +26,8 @@ vibereader-knowledge-workbench/
 
 | Path | Role | Git Remote | Current Use |
 | --- | --- | --- | --- |
-| `apps/reader` | Reader-first app, desktop/web UI, notes/cards/citations | `https://github.com/yishu-ziyu/VibeReader.git` | Main active development |
-| `services/uni-rag` | Local RAG backend, ingest/query/citations/memory backend | `https://github.com/yishu-ziyu/uni-rag.git` | Active backend integration |
-| `apps/vibereader-macos` | VibeReader for Mac: native macOS edition, PageFlow fork (Apache-2.0) + UniRAG AI | 无远端（DEC-0009，push 时机后定） | New: native edition bootstrap |
+| 仓库根（含 `apps/reader`、`services/uni-rag`） | 单一产品仓库：代码 + 契约 + 文档 | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | **唯一活跃开发入口（DEC-0005，2026-08-31 起）** |
+| `apps/vibereader-macos` | VibeReader for Mac: native macOS edition, PageFlow fork (Apache-2.0) + UniRAG AI | 本地独立仓（DEC-0009，M1/M2 稳定后并入单仓） | Native edition bootstrap |
 
 Author Vibero local copies were deleted on 2026-08-13 (`legacy/vibero`, `黑客松/_apps`, `黑客松/_downloads`). Do not restore them. Independent development continues on Reader + UniRAG only.
 
@@ -75,41 +74,21 @@ The plain `uv run pytest` entry can hit a stale pytest script after local folder
 
 ## Cloud Repository Strategy
 
-Current cloud state:
+Current cloud state (after DEC-0005 cutover, 2026-08-31):
 
 | Local path | Current remote | Role |
 | --- | --- | --- |
-| workbench root | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | product lifecycle docs, shared contracts, scripts |
-| `apps/reader` | `https://github.com/yishu-ziyu/VibeReader.git` | active Reader app |
-| `services/uni-rag` | `https://github.com/yishu-ziyu/uni-rag.git` | active Knowledge/RAG service |
-
-Target direction: one product should eventually have one cloud project home. Do not create more scattered remotes for new modules.
-
-The workbench root is private, pushed, and tracks `origin/main`. It is the canonical product management home, but Reader and UniRAG still remain the active code remotes until monorepo cutover is verified.
+| workbench root | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | **唯一活跃仓库**：全部代码 + 契约 + 文档 |
+| `apps/reader`（历史） | `https://github.com/yishu-ziyu/VibeReader.git` | 只读归档（cutover 前已完整推送） |
+| `services/uni-rag`（历史） | `https://github.com/yishu-ziyu/uni-rag.git` | 只读归档（cutover 前已完整推送） |
 
 Repository retention policy:
 
-- keep `VibeReader.git` and `uni-rag.git` during Phase C.0/C.1;
-- do not delete or archive child remotes before their code is intentionally imported into the workbench root;
-- after cutover, archive/read-only the old remotes and point their READMEs to the workbench root;
-- do not create additional scattered product remotes.
+- `VibeReader.git` 与 `uni-rag.git` 已冻结为只读归档，不再推送；后续把 README 指回本仓；
+- 不创建更多分散的产品远程；
+- `apps/vibereader-macos` 并入本仓时沿用 squash import（见 DEC-0005）。
 
-Durable decision: `docs/decisions/DEC-0004-retain-subrepos-until-monorepo-cutover.md`.
-
-Migration trigger:
-
-- Reader and UniRAG both have clean worktrees;
-- the Reader ↔ UniRAG memory/citation contracts are stable enough to version together;
-- root-level scripts can start/test the combined workspace;
-- the user confirms the repository strategy.
-
-Recommended cloud consolidation path:
-
-1. Keep the top-level `vibereader-knowledge-workbench` repository as the management home.
-2. Audit nested repository states before importing code.
-3. Choose a migration method in DEC-0005: subtree, submodule, history-preserving import, or squash import.
-4. Trial the chosen cutover method on a branch.
-5. After verified cutover, make the top-level repo the active code source and archive/read-only the old Reader/UniRAG remotes.
+Durable decisions: `docs/decisions/DEC-0004-retain-subrepos-until-monorepo-cutover.md`（已被 DEC-0005 取代）、`docs/decisions/DEC-0005-monorepo-squash-import.md`。
 
 ## Consolidation Plan
 
@@ -136,26 +115,19 @@ Phase C.0: done.
 - Keep `apps/reader` and `services/uni-rag` ignored as nested repositories until a later subtree/submodule/flatten decision.
 - Root remote is created and tracks `origin/main`; continue with the later subtree/submodule/flatten decision only after the nested repositories are reviewed.
 
-Phase C.1: planned.
+Phase C.1: done (2026-08-31, DEC-0005).
 
-- Audit root, Reader, and UniRAG repository states.
-- Verify root scripts can run the daily Reader + UniRAG workflow.
-- Choose the monorepo cutover method in DEC-0005.
-- Run a trial cutover branch before changing the source of truth.
-- Keep old child repositories active until the root repo fully owns verified app/service code.
+- Audited both child repositories: clean worktrees, fully pushed to their remotes.
+- Cutover method chosen and executed: **squash import**（子仓历史由归档远程承载，根仓收一份快照）。
+- Nested `.git` 备份于 `~/vibereader-git-backups/` 后移除；根仓已拥有全部 app/service 代码。
+- 旧远程冻结为只读归档。
 
-Plan: `.ship/tasks/20260701-vibereader-knowledge-flywheel/plan/phase-c1-monorepo-cutover-plan.md`.
-
-Phase C.2: later.
-
-- Convert to a true monorepo only after the active Reader and UniRAG dirty states are resolved.
-- Candidate layout:
+Phase C.2: no longer needed — the layout below is now the real single-repo layout:
 
 ```text
 apps/reader
 services/uni-rag
+apps/vibereader-macos   # 嵌套本地仓，M1/M2 后并入
 packages/shared-contracts
-packages/model-providers
+packages/model-providers  # 规划中
 ```
-
-The goal is fewer places to remember, not a risky history rewrite.
