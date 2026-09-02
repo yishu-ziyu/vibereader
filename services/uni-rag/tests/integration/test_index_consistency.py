@@ -147,6 +147,45 @@ def test_delete_unknown_source_returns_404(client):
     assert r.status_code == 404
 
 
+def test_duplicate_start_offsets_do_not_lose_vectors(client, monkeypatch):
+    """回归：chunk_id 必须唯一，否则 Chroma.add 静默覆盖导致向量成片丢失。
+
+    真实 PDF 每页 offset 从 0 重排，会有大量 chunk 的 start_offset 相同
+    （实测 wonderland 75/81 个都是 0）。这里桩 chunk_document 强制造出三个
+    offset 全为 0 的 chunk，断言入库后向量条数 == chunk 条数（旧实现会只剩 1 条）。
+    """
+    from uni_rag.ingest import pipeline as ingest_module
+    from uni_rag.ingest.chunker import Chunk
+    from uni_rag.ingest.pipeline import IngestPipeline
+
+    texts = [
+        "The quick brown fox jumps over the lazy dog near the riverbank.",
+        "A journey of a thousand miles begins with a single steady step.",
+        "Practice makes perfect when you repeat the drill with full intent.",
+    ]
+
+    def _fake_chunk(text, source_id, **kwargs):
+        return [
+            Chunk(text=t, source_id=source_id, section_title=None,
+                  start_offset=0, end_offset=len(t), page_number=None)
+            for t in texts
+        ]
+
+    monkeypatch.setattr(ingest_module, "chunk_document", _fake_chunk)
+
+    with open(_sample_md(), "rb") as f:
+        r = client.post("/api/ingest", files={"file": ("dup.md", f, "text/markdown")})
+    assert r.status_code == 200, r.text
+    result = r.json()
+    sid = result["source_id"]
+
+    pipeline = IngestPipeline(kb_id=None)
+    # 三个 offset 相同的 chunk 必须各自成一条向量，不能被覆盖。
+    assert pipeline.vector.collection.count() == len(texts)
+    assert pipeline.vector.count_source(sid) == len(texts)
+    assert len(pipeline.bm25.docs) == len(texts)
+
+
 def test_delete_kb_document_endpoint(client):
     """KB 版删除端点：只删该 KB 内的 source，未知 KB 返回 404。"""
     from uni_rag.ingest.pipeline import IngestPipeline

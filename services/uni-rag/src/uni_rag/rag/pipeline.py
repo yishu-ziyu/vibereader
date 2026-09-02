@@ -11,7 +11,10 @@ from uni_rag.cite.verifier import CitationVerifier
 from uni_rag.config import load_settings
 
 
-_CITE_RE = re.compile(r"\[([a-zA-Z0-9_]+:\d+)\]")
+# chunk_id 形如 "<source_id>:<offset>"（旧）或 "<source_id>:<offset>:<seq>"（新，
+# 序号用于消歧重复 offset）。捕获一个 source_id 段 + 至少一段 ":数字"，
+# 允许多段。裸 hex（memory_id）无冒号，仍不匹配，符合预期。
+_CITE_RE = re.compile(r"\[([a-zA-Z0-9_]+(?::\d+)+)\]")
 
 
 def resolve_source_text(
@@ -26,7 +29,9 @@ def resolve_source_text(
     uploads 里的 PDF 是二进制，直接 read_text 会得到乱码导致定位失败。
     sidecar 不存在（旧数据/解析为空）时回退读 uploads 原文，保持旧行为。
     """
-    source_id = chunk_id.rsplit(":", 1)[0] if ":" in chunk_id else chunk_id
+    # source_id 是 16 位 hex（不含冒号），chunk_id 形如 "<source_id>:<offset>"
+    # 或新的 "<source_id>:<offset>:<seq>"，取首段即 source_id，两种格式都成立。
+    source_id = chunk_id.split(":", 1)[0] if ":" in chunk_id else chunk_id
     sidecar = parsed_dir / f"{source_id}.md"
     if sidecar.exists():
         return sidecar.read_text(encoding="utf-8")

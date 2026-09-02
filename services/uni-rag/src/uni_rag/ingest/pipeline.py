@@ -243,10 +243,13 @@ class IngestPipeline:
         vecs = self.embedder.embed(texts)
 
         emit("indexing", 82, "正在写入向量索引和关键词索引", chunks=len(chunks))
-        for c, v in zip(chunks, vecs):
+        # chunk_id 必须唯一：start_offset 来自 text.find(piece)，对 PDF 每页从 0
+        # 重排或重复文本会大量相同（实测一篇 wonderland 75/81 个 offset 都是 0），
+        # 而 Chroma 的 add 对相同 id 静默覆盖 → 向量成片丢失。追加序号 i 消歧。
+        for i, (c, v) in enumerate(zip(chunks, vecs)):
             self.vector.add(
                 source_id=source_id,
-                chunk_id=f"{source_id}:{c.start_offset}",
+                chunk_id=f"{source_id}:{c.start_offset}:{i}",
                 embedding=v,
                 metadata={
                     "source": save_name,
@@ -259,9 +262,9 @@ class IngestPipeline:
                 document=c.text,
             )
 
-        for c in chunks:
+        for i, c in enumerate(chunks):
             self.bm25.add(
-                chunk_id=f"{source_id}:{c.start_offset}",
+                chunk_id=f"{source_id}:{c.start_offset}:{i}",
                 text=c.text,
                 metadata={"source": save_name, "section": c.section_title or "", "page": c.page_number or 0},
             )
@@ -339,10 +342,11 @@ class IngestPipeline:
 
         save_name = original_name or extraction.title or url
         emit("indexing", 82, "正在写入向量索引和关键词索引", chunks=len(chunks))
-        for c, v in zip(chunks, vecs):
+        # chunk_id 追加序号消歧，同 ingest_file（start_offset 可能重复）。
+        for i, (c, v) in enumerate(zip(chunks, vecs)):
             self.vector.add(
                 source_id=source_id,
-                chunk_id=f"{source_id}:{c.start_offset}",
+                chunk_id=f"{source_id}:{c.start_offset}:{i}",
                 embedding=v,
                 metadata={
                     "source": save_name,
@@ -358,9 +362,9 @@ class IngestPipeline:
                 document=c.text,
             )
 
-        for c in chunks:
+        for i, c in enumerate(chunks):
             self.bm25.add(
-                chunk_id=f"{source_id}:{c.start_offset}",
+                chunk_id=f"{source_id}:{c.start_offset}:{i}",
                 text=c.text,
                 metadata={
                     "source": save_name,

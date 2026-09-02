@@ -323,7 +323,9 @@ def test_kb_query_export_uses_same_kb_citations(client, monkeypatch):
 
     def fake_complete(self, system, max_tokens=1024):
         prompt = self.messages[-1]["content"]
-        m = re.search(r"([a-f0-9]{16}:\d+)", prompt)
+        # chunk_id 可能是 "<sid>:<offset>" 或新的 "<sid>:<offset>:<seq>"，
+        # 捕获完整 id（允许多段 :数字），否则回吐被截断的 id 会查不到 chunk。
+        m = re.search(r"([a-f0-9]{16}(?::\d+)+)", prompt)
         return f"answer [{m.group(1)}]" if m else "answer"
 
     monkeypatch.setattr("uni_rag.llm.client.LLMClient.complete", fake_complete)
