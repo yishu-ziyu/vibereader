@@ -690,19 +690,25 @@ def _list_documents_for_kb(kb_id: str) -> list[DocumentInfo]:
         return []
 
     counts: dict[str, int] = {}
+    source_ids: dict[str, str] = {}
     vector = _vector_for_kb(kb_id)
     try:
         res = vector.collection.get(include=["metadatas"])
     except Exception:
-        res = {"metadatas": []}
-    for meta in res.get("metadatas") or []:
+        res = {"ids": [], "metadatas": []}
+    for cid, meta in zip(res.get("ids") or [], res.get("metadatas") or []):
         source = str(meta.get("source", "")) if meta else ""
         if source:
             counts[source] = counts.get(source, 0) + 1
+            source_ids.setdefault(source, str(cid).split(":", 1)[0])
 
     documents: list[DocumentInfo] = []
     for path in sorted(p for p in uploads_dir.iterdir() if p.is_file() and not p.name.startswith(".")):
-        documents.append(DocumentInfo(filename=path.name, chunks=counts.get(path.name, 0)))
+        documents.append(DocumentInfo(
+            filename=path.name,
+            chunks=counts.get(path.name, 0),
+            source_id=source_ids.get(path.name),
+        ))
     return documents
 
 

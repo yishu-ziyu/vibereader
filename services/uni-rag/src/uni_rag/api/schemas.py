@@ -83,6 +83,9 @@ class DocumentInfo(BaseModel):
     format: str = "unknown"
     platform: str | None = None
     source_url: str | None = None
+    # 删除入口需要 source_id（chunk id 的 "<source_id>:<offset>" 前缀），
+    # 列表接口带上它，客户端就不用再反查。
+    source_id: str | None = None
 
 
 class DocumentListResponse(BaseModel):
