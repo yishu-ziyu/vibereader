@@ -1,6 +1,6 @@
 # VibeReader Project Index
 
-Updated: 2026-08-13
+Updated: 2026-09-04
 
 ## Canonical Local Root
 
@@ -26,7 +26,7 @@ vibereader/
 
 | Path | Role | Git Remote | Current Use |
 | --- | --- | --- | --- |
-| 仓库根（含 `apps/reader`、`services/uni-rag`） | 单一产品仓库：代码 + 契约 + 文档 | `https://github.com/yishu-ziyu/vibereader.git` | **唯一活跃开发入口（DEC-0005，2026-08-31 起）** |
+| 仓库根（含 `apps/reader`、`services/uni-rag`） | 单一公开产品仓库：代码 + 契约 + 文档 | `https://github.com/yishu-ziyu/vibereader.git` | **唯一活跃开发入口（DEC-0005，2026-08-31 起）** |
 | `apps/vibereader-macos` | VibeReader for Mac: native macOS edition, PageFlow fork (Apache-2.0) + UniRAG AI | 本地独立仓（DEC-0009，M1/M2 稳定后并入单仓） | Native edition bootstrap |
 
 Author Vibero local copies were deleted on 2026-08-13 (`legacy/vibero`, `黑客松/_apps`, `黑客松/_downloads`). Do not restore them. Independent development continues on Reader + UniRAG only.

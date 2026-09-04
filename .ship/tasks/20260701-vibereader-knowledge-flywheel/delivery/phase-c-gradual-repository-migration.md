@@ -38,7 +38,7 @@ Root remote:
 https://github.com/yishu-ziyu/vibereader.git
 ```
 
-The repository is private, default branch is `main`, and local root now tracks `origin/main`. Verified with `gh repo view` and `git ls-remote`.
+The repository is public, default branch is `main`, and local root tracks `origin/main`. Verified with `gh repo view` and `git ls-remote`.
 
 ## Next Action
 
