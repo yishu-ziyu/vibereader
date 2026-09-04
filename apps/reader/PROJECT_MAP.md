@@ -4,7 +4,7 @@ Last updated: 2026-05-23
 
 ## Current mainline
 
-`/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader/apps/reader`
+`/Users/mahaoxuan/Desktop/AI产品经理/vibereader/apps/reader`
 
 This is the active development surface. New work should happen here unless a task explicitly says otherwise.
 

@@ -11,7 +11,7 @@ Reduce ADHD/friction risk by making one local directory the default entry point 
 Canonical root:
 
 ```text
-/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
+/Users/mahaoxuan/Desktop/AI产品经理/vibereader
 ```
 
 Canonical project layout:

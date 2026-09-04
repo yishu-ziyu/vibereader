@@ -5,7 +5,7 @@ Updated: 2026-09-04
 ## Canonical Local Root
 
 ```text
-/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
+/Users/mahaoxuan/Desktop/AI产品经理/vibereader
 ```
 
 Open this directory first when continuing the product.

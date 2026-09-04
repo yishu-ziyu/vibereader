@@ -7,7 +7,7 @@ Date: 2026-07-01
 During competitive-analysis roadmap writeback, existing files under:
 
 ```text
-/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader/
+/Users/mahaoxuan/Desktop/AI产品经理/vibereader/
 ```
 
 began returning:
@@ -40,7 +40,7 @@ Instead of force-editing existing files, the work was continued through additive
 `yishuship` PM verification passed:
 
 ```text
-printf '%s' '{"cwd":"/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader"}' | bash /Users/mahaoxuan/Developer/yishuship/scripts/pm-verify.sh
+printf '%s' '{"cwd":"/Users/mahaoxuan/Desktop/AI产品经理/vibereader"}' | bash /Users/mahaoxuan/Developer/yishuship/scripts/pm-verify.sh
 ```
 
 The command exited with code 0.

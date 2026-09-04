@@ -59,7 +59,7 @@ Reader opens document
 Local canonical root:
 
 ```text
-/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
+/Users/mahaoxuan/Desktop/AI产品经理/vibereader
 ```
 
 Reader:

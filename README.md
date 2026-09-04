@@ -20,7 +20,7 @@
 ## 快速进入
 
 ```bash
-cd /Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
+cd /Users/mahaoxuan/Desktop/AI产品经理/vibereader
 
 # Reader
 cd apps/reader

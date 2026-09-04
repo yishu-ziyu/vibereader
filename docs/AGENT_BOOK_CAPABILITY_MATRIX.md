@@ -265,7 +265,7 @@ Live 证据：`apps/reader/docs/AGENT_LIVE_EVAL_RESULTS.md`。进度快照：`do
 
 **Agent**
 
-- `/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader/apps/reader/src/agent/`
+- `/Users/mahaoxuan/Desktop/AI产品经理/vibereader/apps/reader/src/agent/`
   `runtime.js` `llmModel.js` `modelFactory.js` `tools.js` `toolSchemas.js` `permissions.js`
   `contextPacker.js` `contextCompression.js` `skills.js` `skillDocuments.js` `readingTaskModels.js`
   `artifact.js` `taskRunner.js` `multiAgent.js` `trajectory.js` `groundingGate.js` `spanExport.js`

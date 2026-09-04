@@ -104,7 +104,7 @@ Playwright `playwright_navigate` → `http://127.0.0.1:3217/`
 
 ### 步骤 2：上传 sample.md
 
-file input 是 hidden，先 `playwright_evaluate` 设 `display:block`，再 `playwright_upload_file` 上传 `/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader/apps/reader/demo-assets/sample.md` — PASS
+file input 是 hidden，先 `playwright_evaluate` 设 `display:block`，再 `playwright_upload_file` 上传 `/Users/mahaoxuan/Desktop/AI产品经理/vibereader/apps/reader/demo-assets/sample.md` — PASS
 
 ### 步骤 3：知识入库完成
 
