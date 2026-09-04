@@ -12,7 +12,7 @@ This phase does not immediately delete or archive child repositories. It creates
 
 | Layer | Current Source | Transition Role |
 | --- | --- | --- |
-| Product lifecycle, yishuship, contracts, root scripts | `yishu-ziyu/vibereader-knowledge-workbench` | Canonical management home |
+| Product lifecycle, yishuship, contracts, root scripts | `yishu-ziyu/vibereader` | Canonical management home |
 | Reader frontend | `yishu-ziyu/VibeReader` | Active code remote until cutover |
 | UniRAG backend | `yishu-ziyu/uni-rag` | Active code remote until cutover |
 | Vibero legacy | `chenyu-xjtu/Vibero` | Reference only unless explicitly revived |

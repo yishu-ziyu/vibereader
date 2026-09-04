@@ -4,7 +4,7 @@ Date: 2026-07-02
 
 ## Decision
 
-Create a top-level `vibereader-knowledge-workbench` Git repository as the product workspace repository, but do not flatten Reader, UniRAG, or Vibero histories yet.
+Create a top-level `vibereader` Git repository as the product workspace repository, but do not flatten Reader, UniRAG, or Vibero histories yet.
 
 The top-level repository tracks:
 

@@ -1,11 +1,11 @@
-# VibeReader Knowledge Workbench Project Index
+# VibeReader Project Index
 
 Updated: 2026-08-13
 
 ## Canonical Local Root
 
 ```text
-/Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench
+/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
 ```
 
 Open this directory first when continuing the product.
@@ -13,7 +13,7 @@ Open this directory first when continuing the product.
 ## Current Layout
 
 ```text
-vibereader-knowledge-workbench/
+vibereader/
   apps/
     reader/          # active VibeReader app
   services/
@@ -26,19 +26,14 @@ vibereader-knowledge-workbench/
 
 | Path | Role | Git Remote | Current Use |
 | --- | --- | --- | --- |
-| 仓库根（含 `apps/reader`、`services/uni-rag`） | 单一产品仓库：代码 + 契约 + 文档 | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | **唯一活跃开发入口（DEC-0005，2026-08-31 起）** |
+| 仓库根（含 `apps/reader`、`services/uni-rag`） | 单一产品仓库：代码 + 契约 + 文档 | `https://github.com/yishu-ziyu/vibereader.git` | **唯一活跃开发入口（DEC-0005，2026-08-31 起）** |
 | `apps/vibereader-macos` | VibeReader for Mac: native macOS edition, PageFlow fork (Apache-2.0) + UniRAG AI | 本地独立仓（DEC-0009，M1/M2 稳定后并入单仓） | Native edition bootstrap |
 
 Author Vibero local copies were deleted on 2026-08-13 (`legacy/vibero`, `黑客松/_apps`, `黑客松/_downloads`). Do not restore them. Independent development continues on Reader + UniRAG only.
 
-## Compatibility Symlinks
+## Canonical Entry
 
-The old Reader path is retained as a symlink so existing scripts, shells, and muscle memory do not break immediately:
-
-```text
-/Users/mahaoxuan/Desktop/黑客松/阅读器/ai-chat-standalone
-  -> /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench/apps/reader
-```
+旧 Reader 入口 `/Users/mahaoxuan/Desktop/黑客松/阅读器/ai-chat-standalone` 已移除。统一从本仓库进入。
 
 `/Users/mahaoxuan/Desktop/AI产品经理/uni-rag` 已于 2026-08-31 恢复为**独立项目副本**（不再是软链）：从 `services/uni-rag` 复制最新代码 + 从 `~/vibereader-git-backups/unirag-git-20260831.tar.gz` 恢复 `.git` 历史，remote 仍指向 `uni-rag.git`。它是独立演进的实验项目，不属于 workbench 工程；workbench 的 canonical 代码仍是 `services/uni-rag`。
 
@@ -46,7 +41,7 @@ Treat the new paths as canonical in new docs, prompts, scripts, and future commi
 
 ## Git State Notes
 
-- `apps/reader` Reading Agent Wave 17 shipped: commit on VibeReader `main` (feat agent harness); handoff `docs/AGENT_CONTINUE.md`. Prior contract: `4ec8191`.
+- `apps/reader` Reading Agent Wave 17 已并入本仓库；handoff 为 `docs/AGENT_CONTINUE.md`。Prior contract: `4ec8191`.
 - `services/uni-rag` is clean after commit `b093749 feat: stabilize reader memory contract` and push to `https://github.com/yishu-ziyu/uni-rag.git`.
 - The workbench root is now a separate Phase C.0 repository for lifecycle docs, scripts, and shared contracts. It intentionally ignores nested code repositories during the gradual migration.
 - Author Vibero is gone from disk. Ignore leftover mentions of `legacy/vibero` in older ship notes.
@@ -77,13 +72,13 @@ Current cloud state (after DEC-0005 cutover, 2026-08-31):
 
 | Local path | Current remote | Role |
 | --- | --- | --- |
-| workbench root | `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` | **唯一活跃仓库**：全部代码 + 契约 + 文档 |
-| `apps/reader`（历史） | `https://github.com/yishu-ziyu/VibeReader.git` | 只读归档（cutover 前已完整推送） |
+| repository root | `https://github.com/yishu-ziyu/vibereader.git` | **唯一活跃仓库**：全部代码 + 契约 + 文档 |
 | `services/uni-rag`（历史） | `https://github.com/yishu-ziyu/uni-rag.git` | 只读归档（cutover 前已完整推送） |
 
 Repository retention policy:
 
-- `VibeReader.git` 与 `uni-rag.git` 已冻结为只读归档，不再推送；后续把 README 指回本仓；
+- 原 Reader 单体仓已由本仓库接管 `vibereader` 名称并删除；
+- `uni-rag.git` 冻结为只读归档，不再推送；
 - 不创建更多分散的产品远程；
 - `apps/vibereader-macos` 并入本仓时沿用 squash import（见 DEC-0005）。
 

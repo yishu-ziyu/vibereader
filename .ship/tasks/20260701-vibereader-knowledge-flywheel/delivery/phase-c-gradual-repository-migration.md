@@ -35,7 +35,7 @@ Local migration ready. Top-level cloud repository created and pushed.
 Root remote:
 
 ```text
-https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git
+https://github.com/yishu-ziyu/vibereader.git
 ```
 
 The repository is private, default branch is `main`, and local root now tracks `origin/main`. Verified with `gh repo view` and `git ls-remote`.

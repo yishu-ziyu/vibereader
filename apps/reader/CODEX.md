@@ -8,7 +8,7 @@
 
 **VibeReader** is a local-first AI-powered PDF reading workspace. It combines a PDF viewer with AI chat panels (summary, flashcards, mind map, thinking tree, attention navigator) to help researchers read papers more efficiently.
 
-- **Repo**: `https://github.com/yishu-ziyu/VibeReader`
+- **Repo**: `https://github.com/yishu-ziyu/vibereader`
 - **Type**: Desktop app (Tauri v2) + Web dev server
 - **Audience**: Researchers, students, knowledge workers
 - **Tone**: Warm-tech — not cold SaaS, not playful toy. Focused, quality, trustworthy.

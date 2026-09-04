@@ -3,7 +3,7 @@
 > Task id: `20260701-vibereader-knowledge-flywheel`
 > Phase: `phase-1-contract-stabilization`
 > Route: `/yishuship:design` → `/yishuship:dev` → `/yishuship:e2e` → `/yishuship:handoff`
-> Canonical root: `/Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench`
+> Canonical root: `/Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader`
 > Date: 2026-07-02
 
 ## Prompt To Give GLM
@@ -15,7 +15,7 @@
 先进入项目根目录：
 
 ```bash
-cd /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench
+cd /Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
 ```
 
 必须先阅读：

@@ -1,6 +1,6 @@
-# VibeReader Knowledge Workbench
+# VibeReader
 
-这是 VibeReader 与 UniRAG 的统一项目管理入口，使用 yishuship 管理产品生命周期。
+这是 VibeReader 与 UniRAG 的统一产品仓库，使用 yishuship 管理产品生命周期。
 
 这个目录现在是 VibeReader 知识飞轮的本地统一入口。只保留自己的 Reader 和 UniRAG。作者 Vibero 的本机拷贝已于 2026-08-13 删除，不再作为参考仓。
 
@@ -20,7 +20,7 @@
 ## 快速进入
 
 ```bash
-cd /Users/mahaoxuan/Desktop/AI产品经理/vibereader-knowledge-workbench
+cd /Users/mahaoxuan/Desktop/AI产品经理/自研产品/vibereader
 
 # Reader
 cd apps/reader

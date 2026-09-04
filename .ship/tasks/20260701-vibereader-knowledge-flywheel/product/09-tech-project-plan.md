@@ -5,7 +5,7 @@
 Architecture choice:
 
 - Keep VibeReader and UniRAG in their current folders for now.
-- Manage lifecycle from `vibereader-knowledge-workbench`.
+- Manage lifecycle from `vibereader`.
 - Add an adapter seam in VibeReader.
 - Use UniRAG over local HTTP for the first spike.
 - Do not merge frontends.

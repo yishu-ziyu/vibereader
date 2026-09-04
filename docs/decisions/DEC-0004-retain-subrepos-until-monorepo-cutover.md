@@ -9,7 +9,7 @@ Keep the existing Reader and UniRAG cloud repositories during the transition:
 - `https://github.com/yishu-ziyu/VibeReader.git`
 - `https://github.com/yishu-ziyu/uni-rag.git`
 
-Use `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git` as the product-level cloud home for lifecycle docs, yishuship artifacts, shared contracts, root scripts, and migration records.
+Use `https://github.com/yishu-ziyu/vibereader.git` as the product-level cloud home for lifecycle docs, yishuship artifacts, shared contracts, root scripts, and migration records.
 
 Do not delete, archive, or mark Reader/UniRAG read-only until their code histories are intentionally imported into the workbench root and the root repository becomes the tested source of truth.
 

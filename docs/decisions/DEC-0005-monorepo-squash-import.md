@@ -19,7 +19,7 @@ Execute the Phase C.1 monorepo cutover with the **squash import** method:
 
 ## Consequences
 
-- `apps/reader` and `services/uni-rag` remotes on GitHub (`VibeReader.git`, `uni-rag.git`) are frozen as archives; do not push further work there. READMEs should be pointed at this repo (follow-up).
+- `apps/reader` and `services/uni-rag` were imported into this repository. The former Reader remote was later replaced by this repository at the `vibereader` slug; `uni-rag.git` remains a frozen archive.
 - Nested `.gitignore` files continue to apply inside the root repo (`node_modules`, `.venv`, `data/`, `.env` are excluded — verified before import).
 - `scripts/status.sh` is updated for the single-repo layout.
 - Rollback path: restore archived `.git` directories from the backup tarball and re-ignore the directories.

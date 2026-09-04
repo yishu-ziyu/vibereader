@@ -2,8 +2,7 @@
 
 **日期：** 2026-08-07  
 **阶段：** Wave 17 已收口；下一会话从本文 + 状态快照开始即可。  
-**代码主仓：** `apps/reader`（独立 git，远程 `https://github.com/yishu-ziyu/VibeReader.git`）  
-**工作台仓：** 本仓库根（远程 `https://github.com/yishu-ziyu/vibereader-knowledge-workbench.git`），主要放 Agent 计划 / 矩阵 / 验收文档。
+**代码主仓：** 本仓库根（远程 `https://github.com/yishu-ziyu/vibereader.git`）；Reader 位于 `apps/reader`。
 
 ---
 

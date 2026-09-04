@@ -22,7 +22,7 @@ VibeReader 与 UniRAG 不应被理解为两个竞争产品，而应被理解为�
 当前采用“统一本地工作区 + yishuship 生命周期 + 保留各仓库 Git 历史”的方式。真实代码已收束到一个本地入口下：
 
 ```text
-vibereader-knowledge-workbench/
+vibereader/
   README.md
   PROJECTS.md
   apps/
@@ -60,7 +60,7 @@ vibereader-knowledge-workbench/
 中期再迁移为真正 monorepo 式结构：
 
 ```text
-vibereader-knowledge-workbench/
+vibereader/
   apps/
     reader/             # VibeReader 前端与桌面壳
   services/
