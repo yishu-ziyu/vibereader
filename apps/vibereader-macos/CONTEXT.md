@@ -233,3 +233,15 @@ sites; looking past the immediate next sibling when linking.
   simply stops presenting it (no explicit dismiss). Resolved for now — the payload is per-tab and
   follows the tab; presentation is derived from the **Unlock Queue** head. Any change to dismissal
   timing is separate work.
+
+
+### Window-owned TabManager initialization (Issue #3)
+
+The TabContainerView owner uses StateObject's lazy initialization for its
+TabManager. The manager retains @Observable field-level tracking and adds
+ObservableObject only for this ownership contract. Normal windows construct
+one manager when mounted; tear-off windows retain the supplied manager.
+This prevents temporary manager/session creation and teardown during scene
+body reevaluation. The real root, command routing, registry, and PDF projector
+remain active. Normal-reader smoke must provide actual PDF/navigation evidence
+before treating this lifecycle change as validated.

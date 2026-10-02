@@ -343,3 +343,23 @@ a separate fixture error: two PageOperationTests used `groupsByEvent=false`
 without an explicit undo group, causing an NSUndoManager exception. Those two
 operations now use the fixture's existing `grouped` helper and additionally
 assert `canUndo`; original page-index expectations remain unchanged.
+
+
+### Normal reader root smoke (Issue #3)
+
+`bash scripts/reader-root-smoke.sh` builds and launches the real reader without
+unit/test-host markers. A returning-user preference dismisses the already-seen
+default-PDF-handler prompt. It opens the existing two-page acceptance PDF,
+requires actual document-window OCR, invokes real Next/Previous Page menus,
+and requires visible first/second/first chapter content while a local HTTP 500
+service makes UniRAG unavailable. Complete host samples, images, and OCR stay
+in `reader-root-evidence`; permission or startup failures remain failures.
+This bounded cloud diagnostic is not full `acceptance.sh` or provider-backed
+GUI/citation acceptance, and does not change product behavior.
+
+The smoke proves only reader startup and navigation in that service condition.
+It requires a real App health request after launch, with method/path/User-Agent
+logged and preflight probes excluded. It does not assert error-panel UI,
+reconnection, or answer/citation recovery; those points remain unrun. LaunchServices
+and menu automation are bounded independently so a blocked action leaves the
+actual App stack rather than only a workflow timeout.

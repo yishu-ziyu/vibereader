@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import Combine
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -25,7 +26,13 @@ struct TabRuntime {
 
 @Observable
 @MainActor
-final class TabManager {
+// ObservableObject supplies StateObject's lazy window lifetime. @Observable
+// remains the field-level change tracking used by the reader and its children.
+final class TabManager: ObservableObject {
+    // Explicit publisher satisfies the lifetime wrapper's Combine contract;
+    // property updates stay on @Observable's existing field-level tracking.
+    @ObservationIgnored nonisolated let objectWillChange = ObservableObjectPublisher()
+
     deinit {
         if let monitor = editModeKeyMonitor {
             NSEvent.removeMonitor(monitor)
