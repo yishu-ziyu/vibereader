@@ -65,6 +65,22 @@ struct UniRAGClient: Sendable {
         return try await post("/api/query", body: body)
     }
 
+    // MARK: - Suggest Questions (精读向导)
+
+    /// Asks the service to turn a document excerpt + reading goal into a list of
+    /// guiding questions. `apiKey` may be nil — the backend then resolves the
+    /// provider key from its own environment.
+    func suggestQuestions(
+        text: String,
+        apiKey: String? = nil,
+        provider: String = "minimax"
+    ) async throws -> UniRAGSuggestQuestionsResponse {
+        try await post(
+            "/api/suggest-questions",
+            body: UniRAGSuggestQuestionsRequest(text: text, apiKey: apiKey, provider: provider)
+        )
+    }
+
     // MARK: - Ingest (job-based)
 
     func startIngest(fileData: Data, filename: String) async throws -> UniRAGIngestJobStart {

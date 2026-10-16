@@ -15,6 +15,7 @@ struct TabUIState: Sendable {
     var showingOutline = false
     var showingComments = false
     var showingChat = false
+    var showingGuidedRead = false
     var showingGoToPage = false
     var showingFileImporter = false
     var isEditingPages = false
@@ -42,6 +43,7 @@ final class TabSession {
     let commentManager: CommentManager
     let bookmarkManager: BookmarkManager
     let chatManager: UniRAGChatManager
+    let guidedReadManager: GuidedReadManager
 
     /// Owned per-tab undo stack. Not observable itself (`UndoManager` predates
     /// Observation); availability is mirrored into `undoAvailability` instead.
@@ -101,6 +103,7 @@ final class TabSession {
         self.commentManager = CommentManager()
         self.bookmarkManager = BookmarkManager()
         self.chatManager = UniRAGChatManager()
+        self.guidedReadManager = GuidedReadManager(pdfManager: pdfManager)
         self.undoManager = UndoManager()
         // The markup managers are configured with the live PDFView later, in
         // PDFViewWrapper.makeNSView(); only window-independent wiring lives here.
@@ -127,6 +130,7 @@ final class TabSession {
         commentManager.clearComments()
         bookmarkManager.clearBookmarks()
         chatManager.cleanup()
+        guidedReadManager.cleanup()
         undoManager.removeAllActions()
     }
 

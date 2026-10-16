@@ -17,6 +17,7 @@ struct MainView: View {
     @Bindable var commentManager: CommentManager
     @Bindable var bookmarkManager: BookmarkManager
     @Bindable var chatManager: UniRAGChatManager
+    @Bindable var guidedReadManager: GuidedReadManager
     var tabUndoManager: UndoManager
     var isActive: Bool
     @Binding var showingSearch: Bool
@@ -67,6 +68,11 @@ struct MainView: View {
         nonmutating set { tabManager.setShowingChat(newValue, for: tabID) }
     }
 
+    private var showingGuidedRead: Bool {
+        get { tabManager.showingGuidedRead(for: tabID) }
+        nonmutating set { tabManager.setShowingGuidedRead(newValue, for: tabID) }
+    }
+
     private var isEditingPages: Bool {
         get { tabManager.isEditingPages(for: tabID) }
         nonmutating set { tabManager.setIsEditingPages(newValue, for: tabID) }
@@ -113,6 +119,9 @@ struct MainView: View {
         .overlay(alignment: .topLeading) {
             outlineSidebarOverlay
         }
+        .overlay(alignment: .topLeading) {
+            guidedReadOverlay
+        }
         .overlay(alignment: .bottom) {
             // isActive gate: keeps inactive warm tabs' hover tracking areas out
             // of the window (same gate as the sidebars).
@@ -138,6 +147,7 @@ struct MainView: View {
                 showingOutline = false
                 showingComments = false
                 showingChat = false
+                showingGuidedRead = false
                 bookmarkManager.clearBookmarks()
                 chatManager.documentChanged(filename: nil, fileURL: nil)
             } else {
@@ -147,6 +157,7 @@ struct MainView: View {
         .onChange(of: pdfManager.documentURL) { _, newURL in
             bookmarkManager.loadBookmarks(for: newURL)
             chatManager.documentChanged(filename: newURL?.lastPathComponent, fileURL: newURL)
+            guidedReadManager.documentChanged(fileURL: newURL)
         }
         .onAppear {
             // Idempotent: picks up documents loaded before this view mounted
@@ -234,6 +245,26 @@ struct MainView: View {
             }
         }
         .animation(.easeInOut(duration: DesignTokens.animationFast), value: showingChat)
+    }
+
+    /// The 精读向导 panel lives on the leading edge (same side as the outline),
+    /// gated on the same active+document conditions as the other overlays.
+    private var guidedReadOverlay: some View {
+        ZStack(alignment: .topLeading) {
+            if isActive, showingGuidedRead, pdfManager.hasDocument {
+                GuidedReadPanel(
+                    guidedReadManager: guidedReadManager,
+                    pdfManager: pdfManager,
+                    onClose: { showingGuidedRead = false }
+                )
+                .onExitCommand { showingGuidedRead = false }
+                .padding(.top, topChromeHeight + DesignTokens.spacingXS)
+                .padding(.bottom, DesignTokens.spacingMD)
+                .padding(.leading, DesignTokens.spacingXS)
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: DesignTokens.animationFast), value: showingGuidedRead)
     }
 
     private var outlineSidebarOverlay: some View {
@@ -548,6 +579,7 @@ private extension NSItemProvider {
         commentManager: CommentManager(),
         bookmarkManager: BookmarkManager(),
         chatManager: UniRAGChatManager(),
+        guidedReadManager: GuidedReadManager(pdfManager: PDFManager()),
         tabUndoManager: UndoManager(),
         isActive: true,
         showingSearch: .constant(false),

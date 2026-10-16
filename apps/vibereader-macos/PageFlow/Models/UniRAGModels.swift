@@ -62,6 +62,28 @@ struct UniRAGCitation: Codable, Identifiable, Equatable {
     }
 }
 
+// MARK: - Suggest Questions (精读向导)
+
+/// `POST /api/suggest-questions`. `api_key` is optional: the backend falls back
+/// to the provider key from the sidecar environment (`UNI_RAG_LLM_API_KEY`,
+/// injected from the Keychain at launch). Sending it explicitly only matters
+/// for a UniRAG that wasn't launched by the app.
+struct UniRAGSuggestQuestionsRequest: Encodable {
+    let text: String
+    var apiKey: String?
+    var provider: String = "minimax"
+
+    enum CodingKeys: String, CodingKey {
+        case text
+        case apiKey = "api_key"
+        case provider
+    }
+}
+
+struct UniRAGSuggestQuestionsResponse: Decodable {
+    let questions: [String]
+}
+
 // MARK: - Ingest
 
 struct UniRAGIngestJobStart: Codable {

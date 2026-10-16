@@ -53,6 +53,7 @@ struct TabContainerView: View {
             commentManager: runtime.commentManager,
             bookmarkManager: runtime.bookmarkManager,
             chatManager: runtime.chatManager,
+            guidedReadManager: runtime.guidedReadManager,
             tabUndoManager: runtime.undoManager,
             isActive: isActiveTab,
             showingSearch: $showingSearch,

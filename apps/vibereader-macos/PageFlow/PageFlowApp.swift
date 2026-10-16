@@ -524,6 +524,12 @@ struct PageFlowApp: App {
         .keyboardShortcut(for: "toggleChat")
         .disabled(!hasDocument)
 
+        Button("精读向导") {
+            focusedTabManager?.showingGuidedRead.toggle()
+        }
+        .keyboardShortcut(for: "toggleGuidedRead")
+        .disabled(!hasDocument)
+
         Button("索引当前文档") {
             focusedTabManager?.activeChatManager?.ingestCurrentDocument(
                 fileURL: pdfManager?.documentURL

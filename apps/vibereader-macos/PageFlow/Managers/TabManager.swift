@@ -20,6 +20,7 @@ struct TabRuntime {
     let commentManager: CommentManager
     let bookmarkManager: BookmarkManager
     let chatManager: UniRAGChatManager
+    let guidedReadManager: GuidedReadManager
     let undoManager: UndoManager
 }
 
@@ -135,6 +136,8 @@ final class TabManager {
 
     var activeChatManager: UniRAGChatManager? { activeSession?.chatManager }
 
+    var activeGuidedReadManager: GuidedReadManager? { activeSession?.guidedReadManager }
+
     var activeRuntime: TabRuntime? {
         activeSession.map(runtime)
     }
@@ -211,6 +214,17 @@ final class TabManager {
         }
     }
 
+    var showingGuidedRead: Bool {
+        get {
+            guard let id = activeTabID else { return false }
+            return showingGuidedRead(for: id)
+        }
+        set {
+            guard let id = activeTabID else { return }
+            setShowingGuidedRead(newValue, for: id)
+        }
+    }
+
     var showingGoToPage: Bool {
         get {
             guard let id = activeTabID else { return false }
@@ -256,6 +270,10 @@ final class TabManager {
         sessions[tabID]?.uiState.showingChat ?? false
     }
 
+    func showingGuidedRead(for tabID: UUID) -> Bool {
+        sessions[tabID]?.uiState.showingGuidedRead ?? false
+    }
+
     func showingGoToPage(for tabID: UUID) -> Bool {
         sessions[tabID]?.uiState.showingGoToPage ?? false
     }
@@ -278,6 +296,10 @@ final class TabManager {
 
     func setShowingChat(_ value: Bool, for tabID: UUID) {
         sessions[tabID]?.uiState.showingChat = value
+    }
+
+    func setShowingGuidedRead(_ value: Bool, for tabID: UUID) {
+        sessions[tabID]?.uiState.showingGuidedRead = value
     }
 
     func setShowingGoToPage(_ value: Bool, for tabID: UUID) {
@@ -852,6 +874,7 @@ final class TabManager {
             commentManager: session.commentManager,
             bookmarkManager: session.bookmarkManager,
             chatManager: session.chatManager,
+            guidedReadManager: session.guidedReadManager,
             undoManager: session.undoManager
         )
     }

@@ -87,6 +87,7 @@ enum ShortcutCatalog {
         ShortcutAction(id: "comment", title: "Add Comment", category: .annotations, defaultShortcut: ShortcutModel(key: "e")),
         ShortcutAction(id: "bookmark", title: "Toggle Bookmark", category: .annotations, defaultShortcut: ShortcutModel(key: "d")),
         ShortcutAction(id: "toggleChat", title: "Ask Knowledge Base", category: .annotations, defaultShortcut: ShortcutModel(key: "l")),
+        ShortcutAction(id: "toggleGuidedRead", title: "Guided Read", category: .annotations, defaultShortcut: ShortcutModel(key: "j")),
 
         // Markdown
         ShortcutAction(id: "copyPageAsMarkdown", title: "Copy Page as Markdown", category: .markdown, defaultShortcut: ShortcutModel(key: "m", shift: true)),
