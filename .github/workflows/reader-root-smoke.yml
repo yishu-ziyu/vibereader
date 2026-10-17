@@ -1,0 +1,25 @@
+name: Normal reader root smoke
+on:
+  pull_request:
+    paths:
+      - 'apps/vibereader-macos/**'
+      - 'scripts/reader-root-*'
+      - '.github/workflows/reader-root-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  reader-root:
+    runs-on: macos-15
+    timeout-minutes: 10
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Real reader startup and PDF interaction
+        run: bash scripts/reader-root-smoke.sh
+      - name: Preserve reader evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reader-root-evidence
+          path: ${{ runner.temp }}/reader-root-smoke/
